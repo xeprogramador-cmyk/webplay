@@ -1715,20 +1715,13 @@ try{var _l=new URLSearchParams(location.search).get("l");if(_l&&/^(pt|en|es|fr)$
 <script>
 /* ============ CONFIGURAÇÃO ============ */
 // Várias chaves TMDB: se uma falhar (429, chave inválida, etc.), usa a seguinte.
-/* ===== PROXY CLOUDFLARE (substitui tmdb-cache.php + proxy.php) =====
-   1. Cria o Worker no Cloudflare (ver pasta worker/)
-   2. Cola aqui a URL do teu Worker (sem barra no fim)
-   Exemplo: "https://webplay-proxy.teu-user.workers.dev"
-*/
-const WP_PROXY = "https://webplay-proxy.TEU-USER.workers.dev";  // ← MUDA ISTO
-
 const TMDB_API_KEYS = [
   "1acb1965653f5c352ae66fdab15f5a09",
   "2eb588cabfd607f4abfa001a72e65fcb"
 ];
-let tmdbKeyIndex = 0; // só usado se o Worker falhar
-// Via Cloudflare Worker (cache + chave escondida)
-const TMDB_CACHE_PHP = WP_PROXY + "/tmdb";
+let tmdbKeyIndex = 0; // chave ativa no momento (só fallback se o PHP falhar)
+// Cache no servidor (InfinityFree) — 1 pedido à TMDB serve todos os visitantes
+const TMDB_CACHE_PHP = "tmdb-cache.php";
 
 /* ============ CACHE PERSISTENTE (TMDB + SuperFlixAPI) ============
    Guarda respostas em memória (rápido nesta sessão) e no localStorage
@@ -2217,7 +2210,7 @@ async function primeiroServidorDisponivel(){
   return 0;
 }
 // proxy.php (no teu próprio servidor) evita CORS por completo — é tentado primeiro
-const OWN_PROXY = WP_PROXY + "/proxy?url=";
+const OWN_PROXY = "proxy.php?url=";
 // proxies públicos de terceiros, só como reserva caso o proxy.php não esteja disponível
 const CORS_PROXIES = [
   url => "https://api.allorigins.win/raw?url=" + encodeURIComponent(url),
@@ -2324,17 +2317,17 @@ async function tmdbFetchViaServidor(path, forcarRefresh){
 // Se o PHP não existir (abrir o HTML em ficheiro local), cai para a TMDB direta.
 async function tmdbFetchComRetentativa(path, tentativa = 0, chaveTentada = 0, jaTentouPhp = false){
   path = wpIdiomaPath(path);
-  // --- Via Cloudflare Worker (cache + chave no servidor) ---
-  if(WP_PROXY && !/TEU-USER/.test(WP_PROXY)){
+  // --- Via cache PHP no InfinityFree ---
+  if(false){ // tmdb-cache.php desligado
     try{
       const qs = "path=" + encodeURIComponent(path);
       const r = await fetch(TMDB_CACHE_PHP + "?" + qs);
       if(r.ok){
         try{ return await r.json(); }catch(e){}
       }
-      // Worker falhou → tenta TMDB direta em baixo
+      // 502/404 do PHP → tenta TMDB direta em baixo
     }catch(e){
-      // offline ou Worker ainda não configurado
+      // offline ou ficheiro local sem PHP
     }
   }
 
