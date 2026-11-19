@@ -1,35 +1,22 @@
-WEBPLAY — SÓ O QUE PRECISAS SUBSTITUIR
-=====================================
+WEBPLAY — SÓ ESTES 3 FICHEIROS NO SERVIDOR
+==========================================
 
-NÃO apagues a pasta do site. Só substitui estes ficheiros
-(mesma pasta onde já está o teu index.html).
+Substitui na MESMA pasta do site (não apagues o resto):
 
-NO SERVIDOR (site):
-  1. index.html          → substitui o antigo
-  2. atualizacao.js      → substitui o antigo
-  3. atualizacao-app.js  → ficheiro NOVO (cola na mesma pasta)
+  1. index.html
+  2. atualizacao.js
+  3. atualizacao-app.js   (novo)
 
-NÃO mexas em:
-  idioma.js, imagens, firebase-config.js, atualizacao.json,
-  temas, mega-titulos.json, etc.
+Opcional no Cloudflare Worker: cola worker.js e Deploy.
 
-NO CLOUDFLARE (Worker) — opcional mas recomendado:
-  - Abre o teu Worker no painel Cloudflare
-  - Cola o conteúdo de worker.js e faz Deploy
-  - (Isto NÃO é ficheiro do site; não vai para a pasta do HTML)
+O QUE ESTE INDEX FAZ:
+  - Mostra logo as capas guardadas no aparelho (se já visitou)
+  - Em paralelo atualiza com a rede (cache não trava o site)
+  - Os 4 catálogos (filme, série, anime, dorama) carregam juntos
+  - Se SuperFlix falhar, usa TMDB como lista
+  - Prioridade: capas do catálogo; "últimos episódios" depois
+  - Proxy Cloudflare para SuperFlix (evita CORS)
 
-O QUE ISTO CORRIGE:
-  - Capas em séries / animes / doramas (proxy SuperFlix)
-  - Contagem de utilizadores (Firebase visitas)
-  - Aviso de atualização do app (mais estável)
-
-DEPOIS DE SUBIR:
-  - Ctrl+F5 no site
-  - Testa Séries / Animes / Doramas
-  - Atualização: só aparece DENTRO do app Median
-  - Visitas: no Firebase feed → nó "visitas"
-
-REGRAS FIREBASE (feed-app-fa204):
-  O nó "visitas" precisa de leitura e escrita (senão a contagem
-  não grava). Exemplo no ficheiro CORRECAO-FIREBASE.md do pacote
-  completo, se precisares.
+DEPOIS DE SUBIR: Ctrl+F5 no app e no browser.
+  1ª visita pode demorar um pouco (grava cache).
+  2ª visita deve mostrar capas de imediato.
