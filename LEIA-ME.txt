@@ -1,22 +1,35 @@
-COMO USAR
-1. Envie para o servidor, na mesma pasta: index-com-contagem.php (ou index-direto.php),
-   ponte-anuncio.php, atualizacao.js e atualizacao.json.
-   (O index já vem com o aviso ligado.)
-2. Use o ADMPlay.html (já com o cartão "Atualização do aplicativo" na aba Feed).
-3. Para lançar uma atualização:
-   a) Gere o app novo no Median com uma versão MAIOR (ex.: de 1.1.1 para 1.1.2) e publique
-      na Play Store (ou ponha o APK num link).
-   b) No ADM Play, aba Feed > "Atualização do aplicativo": escreva a versão, cole o link
-      e toque em PUBLICAR ATUALIZAÇÃO. Para parar: DESLIGAR AVISO.
-4. Quem tem versão menor vê o aviso. Quando instala o app novo, o aviso some sozinho.
-   Tocar em "Atualizar" sem instalar NÃO apaga o aviso.
+WEBPLAY — SÓ O QUE PRECISAS SUBSTITUIR
+=====================================
 
-REGRAS DO FIREBASE (necessário uma vez)
-No Firebase do feed (feed-app-fa204) > Realtime Database > Regras, o nó "atualizacao"
-precisa de leitura pública e de escrita para o ADM. Se aparecer
-"O Firebase do feed não deixou gravar" no ADM Play, é isto que falta.
+NÃO apagues a pasta do site. Só substitui estes ficheiros
+(mesma pasta onde já está o teu index.html).
 
-NOTAS
-- O aviso só aparece dentro do app, nunca no navegador.
-- O link tem de ser da Play Store ou de um APK. Um .aab não instala no telemóvel.
-- A versão instalada é lida do próprio app (median.deviceInfo).
+NO SERVIDOR (site):
+  1. index.html          → substitui o antigo
+  2. atualizacao.js      → substitui o antigo
+  3. atualizacao-app.js  → ficheiro NOVO (cola na mesma pasta)
+
+NÃO mexas em:
+  idioma.js, imagens, firebase-config.js, atualizacao.json,
+  temas, mega-titulos.json, etc.
+
+NO CLOUDFLARE (Worker) — opcional mas recomendado:
+  - Abre o teu Worker no painel Cloudflare
+  - Cola o conteúdo de worker.js e faz Deploy
+  - (Isto NÃO é ficheiro do site; não vai para a pasta do HTML)
+
+O QUE ISTO CORRIGE:
+  - Capas em séries / animes / doramas (proxy SuperFlix)
+  - Contagem de utilizadores (Firebase visitas)
+  - Aviso de atualização do app (mais estável)
+
+DEPOIS DE SUBIR:
+  - Ctrl+F5 no site
+  - Testa Séries / Animes / Doramas
+  - Atualização: só aparece DENTRO do app Median
+  - Visitas: no Firebase feed → nó "visitas"
+
+REGRAS FIREBASE (feed-app-fa204):
+  O nó "visitas" precisa de leitura e escrita (senão a contagem
+  não grava). Exemplo no ficheiro CORRECAO-FIREBASE.md do pacote
+  completo, se precisares.

@@ -1,13 +1,15 @@
 /* Aviso de atualização do aplicativo (Median).
-   Lê a versão REAL instalada no aparelho (median.deviceInfo) e compara com atualizacao.json.
+   Lê a versão REAL instalada no aparelho (median.deviceInfo) e compara com
+   o nó Firebase "atualizacao" (projeto feed). Se o Firebase falhar, usa
+   atualizacao.json como reserva.
    - Só aparece dentro do app (não no navegador).
-   - Só some quando o app instalado tiver a versão pedida. Tocar em "Atualizar" não apaga o aviso.
-   - Depois de atualizar de verdade, não volta a aparecer. */
+   - Só some quando o app instalado tiver a versão pedida.
+   - Tocar em "Atualizar" sem instalar NÃO apaga o aviso. */
 (function(){
-  var SESSAO = "webplay_upd_depois";   // "Agora não": esconde só até fechar o app
+  var SESSAO = "webplay_upd_depois";
 
   function partes(v){ return String(v||"0").split(/[^0-9]+/).filter(Boolean).map(Number); }
-  function menor(a, b){                 // a < b ? (ex.: 1.0.0 < 1.0.1)
+  function menor(a, b){
     a = partes(a); b = partes(b);
     for(var i = 0; i < Math.max(a.length, b.length); i++){
       var x = a[i] || 0, y = b[i] || 0;
@@ -16,49 +18,63 @@
     return false;
   }
 
-  function infoApp(cb){                 // espera o bridge do Median ficar pronto (até ~5 s)
+  function infoApp(cb){
     var tent = 0;
     (function tentar(){
       if(window.median && typeof median.deviceInfo === "function"){
         try {
           var r = median.deviceInfo();
-          if(r && r.then){ r.then(cb, function(){}); } else { cb(r); }
-        } catch(e){}
+          if(r && r.then){ r.then(function(info){ cb(info || null); }, function(){ cb(null); }); }
+          else { cb(r || null); }
+        } catch(e){ cb(null); }
         return;
       }
-      if(++tent < 25) setTimeout(tentar, 200);
+      // até ~10 s — o bridge do Median às vezes demora a aparecer
+      if(++tent < 50) setTimeout(tentar, 200);
+      else cb(null);
     })();
   }
 
-  // Lê a configuração: primeiro do Firebase do feed (nó "atualizacao", gravado pelo ADM Play);
-  // se não houver, usa o ficheiro atualizacao.json como reserva.
+  function dbFeedPronto(){
+    try {
+      if(typeof firebase === "undefined") return null;
+      return firebase.app("feed").database();
+    } catch(e){ return null; }
+  }
+
   function lerConfig(cb){
     var feito = false;
     function usarJson(){
       fetch("atualizacao.json?_=" + Date.now(), { cache: "no-store" })
-        .then(function(r){ return r.json(); }).then(cb).catch(function(){});
+        .then(function(r){ return r.json(); }).then(function(c){ if(!feito){ feito = true; cb(c); } })
+        .catch(function(){ if(!feito){ feito = true; cb(null); } });
     }
-    try {
-      var t = setTimeout(function(){ if(!feito){ feito = true; usarJson(); } }, 6000);
-      firebase.app("feed").database().ref("atualizacao").once("value").then(function(snap){
+    function tentarFirebase(tentativa){
+      var db = dbFeedPronto();
+      if(!db){
+        if((tentativa || 0) < 15) return setTimeout(function(){ tentarFirebase((tentativa || 0) + 1); }, 400);
+        return usarJson();
+      }
+      var t = setTimeout(function(){ if(!feito){ feito = true; usarJson(); } }, 8000);
+      db.ref("atualizacao").once("value").then(function(snap){
         if(feito) return; feito = true; clearTimeout(t);
         var c = snap.val();
         if(c) cb(c); else usarJson();
       }, function(){ if(feito) return; feito = true; clearTimeout(t); usarJson(); });
-    } catch(e){ usarJson(); }
+    }
+    try { tentarFirebase(0); } catch(e){ usarJson(); }
   }
 
   infoApp(function(info){
-    if(!info || !info.appVersion) return;           // fora do app: não mostra nada
+    if(!info || !info.appVersion) return;
     lerConfig(function(c){
       if(!c || !c.ativo || !c.versao || !c.link) return;
-      if(!menor(info.appVersion, c.versao)) return;   // já tem esta versão (ou mais nova)
+      if(!menor(info.appVersion, c.versao)) return;
       try { if(!c.obrigatoria && sessionStorage.getItem(SESSAO) === String(c.versao)) return; } catch(e){}
       mostrar(c, info.appVersion);
     });
   });
 
-  // Tela "Atualizando para a versão X": abre ao tocar em Atualizar e começa o download sozinha.
   function iniciarDownload(link){
     try {
       var d = document.createElement("a");
@@ -107,7 +123,7 @@
       ac.appendChild(fechar);
     }
     document.body.appendChild(t);
-    iniciarDownload(c.link);   // começa sozinho
+    iniciarDownload(c.link);
     setTimeout(function(){
       var b = t.querySelector(".bar"); if(b) b.className = "bar ok";
       var st = t.querySelector(".st");

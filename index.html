@@ -5763,6 +5763,97 @@ function chaveVisualizacao(d){
   return d.cat + "_" + d.tmdbId;
 }
 
+
+/* ============ VISITAS / UTILIZADORES ÚNICOS (Firebase feed → nó "visitas") ============
+   Conta quantas pessoas entraram no app/site (únicos + novos por dia).
+   Estrutura no Firebase (feed-app-fa204):
+     visitas/unicos              → total de aparelhos únicos de sempre
+     visitas/resumo/YYYY-MM-DD/novos → quantos aparelhos novos nesse dia
+     visitas/dispositivos/{id}   → { primeiro, ultimo } (evita contar 2× o mesmo)
+   O ADM Play lê estes nós. Requer regras de escrita pública em "visitas"
+   (ver CORRECAO-FIREBASE.md). */
+(function(){
+  var LS_ID = "webplay_visita_id";
+  var LS_DIA = "webplay_visita_dia";
+
+  function hojeISO(){
+    var d = new Date();
+    var m = String(d.getMonth()+1).padStart(2,"0");
+    var dia = String(d.getDate()).padStart(2,"0");
+    return d.getFullYear() + "-" + m + "-" + dia;
+  }
+  function idAparelho(){
+    try{
+      var id = localStorage.getItem(LS_ID);
+      if(id && id.length >= 8) return id;
+      id = "v_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem(LS_ID, id);
+      return id;
+    }catch(e){
+      return "v_tmp_" + Date.now().toString(36);
+    }
+  }
+  function registarVisita(){
+    if(typeof firebaseFeedAtivo === "undefined" || !firebaseFeedAtivo) return;
+    var db;
+    try{ db = dbFeed(); }catch(e){ return; }
+    if(!db) return;
+
+    var id = idAparelho();
+    var dia = hojeISO();
+    var agora = Date.now();
+
+    // Já contámos este aparelho hoje neste browser → não volta a gravar
+    try{
+      if(localStorage.getItem(LS_DIA) === dia) return;
+    }catch(e){}
+
+    var refDisp = db.ref("visitas/dispositivos/" + id);
+    refDisp.once("value").then(function(snap){
+      var dados = snap.val();
+      var primeiro = !dados || !dados.primeiro;
+      var mesmoDia = dados && dados.dia === dia;
+
+      // marca local para não repetir pedidos no mesmo dia
+      try{ localStorage.setItem(LS_DIA, dia); }catch(e){}
+
+      if(mesmoDia) return; // já contado hoje no servidor
+
+      var updates = {};
+      updates["visitas/dispositivos/" + id] = {
+        primeiro: dados && dados.primeiro ? dados.primeiro : agora,
+        ultimo: agora,
+        dia: dia
+      };
+
+      // incremento atómico
+      var pUnicos = primeiro
+        ? db.ref("visitas/unicos").transaction(function(n){ return (n || 0) + 1; })
+        : Promise.resolve();
+      var pDia = db.ref("visitas/resumo/" + dia + "/novos").transaction(function(n){ return (n || 0) + 1; });
+
+      return Promise.all([
+        refDisp.set(updates["visitas/dispositivos/" + id]),
+        pUnicos,
+        pDia
+      ]);
+    }).catch(function(err){
+      console.warn("Não consegui registar a visita:", err && err.message ? err.message : err);
+    });
+  }
+
+  // Espera o Firebase do feed ficar pronto (até ~6 s) e regista uma vez
+  var tent = 0;
+  (function esperar(){
+    if(typeof firebaseFeedAtivo !== "undefined" && firebaseFeedAtivo){
+      try{ registarVisita(); }catch(e){}
+      return;
+    }
+    if(++tent < 30) setTimeout(esperar, 200);
+  })();
+})();
+
+
 function registrarAcesso(d){
   if(!firebaseFeedAtivo || !d || !d.cat || !d.tmdbId) return;
   try{
