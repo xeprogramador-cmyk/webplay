@@ -23,11 +23,12 @@ const SUPERFLIX_ALLOWED = ["superflixapi.monster"];
 const MEGA_BASE = "https://megaembedapi.site";
 
 const TTL = {
-  season: 15 * 60,       // 15 min
-  search: 60 * 60,       // 1 h
-  details: 24 * 60 * 60, // 24 h
-  default: 6 * 60 * 60,  // 6 h
-  lista: 15 * 60,        // SuperFlix lista
+  season: 30 * 60,         // 30 min — episódios mudam
+  search: 6 * 60 * 60,     // 6 h — pesquisas iguais partilham cache entre utilizadores
+  details: 24 * 60 * 60,   // 24 h — capas/sinopses quase não mudam
+  discover: 3 * 60 * 60,   // 3 h — listas "mais recentes"
+  default: 6 * 60 * 60,    // 6 h
+  lista: 60 * 60,          // 1 h — SuperFlix /lista (filmes, séries, animes, doramas)
   megaExiste: 12 * 60 * 60,
   megaNao: 1 * 60 * 60,
 };
@@ -69,8 +70,26 @@ export default {
 function tmdbTtl(path) {
   if (/\/season\/\d+/.test(path) || /\/episode\/\d+/.test(path)) return TTL.season;
   if (path.includes("/search/")) return TTL.search;
+  if (path.includes("/discover/")) return TTL.discover;
   if (/^\/(movie|tv)\/\d+/.test(path)) return TTL.details;
   return TTL.default;
+}
+
+/** Normaliza path de pesquisa para o mesmo cache servir "Matrix" e "matrix". */
+function normalizeCachePath(path) {
+  try {
+    if (!path.includes("/search/")) return path;
+    const i = path.indexOf("?");
+    if (i < 0) return path;
+    const base = path.slice(0, i);
+    const qs = new URLSearchParams(path.slice(i + 1));
+    if (qs.has("query")) qs.set("query", String(qs.get("query") || "").trim().toLowerCase());
+    const ordered = [];
+    [...qs.keys()].sort().forEach((k) => ordered.push(k + "=" + qs.get(k)));
+    return base + "?" + ordered.join("&");
+  } catch (e) {
+    return path;
+  }
 }
 
 async function handleTmdb(url, env, ctx) {
@@ -83,7 +102,8 @@ async function handleTmdb(url, env, ctx) {
   }
 
   const refresh = url.searchParams.get("refresh") === "1";
-  const cacheKey = "tmdb:" + path;
+  const pathNorm = normalizeCachePath(path);
+  const cacheKey = "tmdb:" + pathNorm;
   const ttl = tmdbTtl(path);
 
   if (!refresh && env.CACHE) {

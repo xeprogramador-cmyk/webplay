@@ -1748,10 +1748,10 @@ const CACHE_PREFIX = "cine_api_cache_v1_";
    O utilizador entra → o site pede dados frescos → mostra o novo EP na hora.
    O cache serve de reserva se a API falhar e para acelerar pedidos repetidos. */
 const CACHE_TTL_MS = {
-  details: 7 * 24 * 60 * 60 * 1000,
-  season:  30 * 60 * 1000,        // 30 min (só backup; episódios vão sempre à rede)
-  search:  6 * 60 * 60 * 1000,
-  lista:   15 * 60 * 1000,        // 15 min backup; listas também vão à rede ao abrir
+  details: 7 * 24 * 60 * 60 * 1000, // 7 dias — capas/sinopses
+  season:  30 * 60 * 1000,          // 30 min (backup; episódios vão à rede)
+  search:  12 * 60 * 60 * 1000,     // 12 h — pesquisas repetidas ficam rápidas
+  lista:   60 * 60 * 1000,          // 1 h — listas SuperFlix (filme/série/anime/dorama)
   default: 12 * 60 * 60 * 1000
 };
 const CACHE_MEMORIA = new Map();
@@ -2233,16 +2233,18 @@ async function fetchJSON(url){
   const ehLista = typeof url === "string" && url.indexOf("/lista") !== -1;
   const chaveCache = ehLista ? ("sf:" + url) : null;
 
-  // Listas: rede primeiro (título/EP novo entra na hora). Cache só se a rede falhar.
-  // Outros pedidos SuperFlix: igual — tenta rede, cache como reserva.
+  // Listas e outros pedidos SuperFlix:
+  // 1) Cloudflare Worker (OWN_PROXY) — sem CORS, com cache no Worker
+  // 2) pedido direto (só funciona se a API permitir CORS)
+  // 3) proxies públicos de reserva
+  // Se tudo falhar, devolve o último cache (mesmo antigo) para o catálogo não ficar vazio.
 
   let lastErr;
   let dados = null;
 
-  // SEM proxy.php: pedido direto e, se o CORS bloquear, proxies públicos. Cada tentativa tem tempo limite (8 s).
   const _pedir = async (u) => {
     const ctrl = new AbortController();
-    const to = setTimeout(() => ctrl.abort(), 8000);
+    const to = setTimeout(() => ctrl.abort(), 12000);
     try{
       const r = await fetch(u, { signal: ctrl.signal });
       if(!r.ok) throw new Error("status " + r.status);
@@ -2251,8 +2253,19 @@ async function fetchJSON(url){
     }finally{ clearTimeout(to); }
   };
 
-  try{ dados = await _pedir(url); }catch(e){ lastErr = e; }
+  // 1) Proxy Cloudflare (caminho principal — séries/animes/doramas dependem disto)
+  if(OWN_PROXY && WP_PROXY && !/TEU-USER/.test(WP_PROXY)){
+    try{
+      dados = await _pedir(OWN_PROXY + encodeURIComponent(url));
+    }catch(e){ lastErr = e; dados = null; }
+  }
 
+  // 2) Pedido direto
+  if(dados === null){
+    try{ dados = await _pedir(url); }catch(e){ lastErr = e; dados = null; }
+  }
+
+  // 3) Proxies públicos
   if(dados === null){
     for(const makeUrl of CORS_PROXIES){
       try{ dados = await _pedir(makeUrl(url)); break; }catch(e){ lastErr = e; dados = null; }
@@ -2269,7 +2282,7 @@ async function fetchJSON(url){
     const antigo = cacheLerQualquer(chaveCache);
     if(antigo !== null && antigo !== undefined) return antigo;
   }
-  throw lastErr;
+  throw lastErr || new Error("SuperFlixAPI indisponível");
 }
 
 // NOVO: a indexação da pesquisa (4 categorias em paralelo) + a grelha normal
