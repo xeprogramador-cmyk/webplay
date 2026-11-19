@@ -1,0 +1,12 @@
+/* =====================================================================
+   TEMA PARTILHADO — Webplay (index.php) e Área de publicação (index.html)
+   Mexa só aqui para mudar as cores/temas dos DOIS ao mesmo tempo.
+   O tema escolhido no Webplay (guardado em "cinesongo_tema") é lido pelos dois.
+   ===================================================================== */
+:root{
+  --bg:#0d0f14; --panel:#161a22; --ink:#eae6dd; --muted:#8a8f9c;
+  --accent:#e0a33c; --accent-dim:#7a5a20; --line:#232833;
+  --on-accent:#1a1305; /* cor do texto em cima de botões da cor de destaque */
+}
+:root[data-tema="claro"]{--bg:#f4f1ea;--panel:#ffffff;--ink:#1c1f26;--muted:#6b707c;--accent:#c78410;--accent-dim:#f0d9a8;--line:#e2ded3;--on-accent:#ffffff;}
+:root[data-tema="oceano"]{--bg:#06131f;--panel:#0d2233;--ink:#e6f3fb;--muted:#7f9bb0;--accent:#35c4e0;--accent-dim:#145a6b;--line:#16344a;--on-accent:#06131f;}

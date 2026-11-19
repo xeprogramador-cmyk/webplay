@@ -1,0 +1,22 @@
+COMO USAR
+1. Envie para o servidor, na mesma pasta: index-com-contagem.php (ou index-direto.php),
+   ponte-anuncio.php, atualizacao.js e atualizacao.json.
+   (O index já vem com o aviso ligado.)
+2. Use o ADMPlay.html (já com o cartão "Atualização do aplicativo" na aba Feed).
+3. Para lançar uma atualização:
+   a) Gere o app novo no Median com uma versão MAIOR (ex.: de 1.1.1 para 1.1.2) e publique
+      na Play Store (ou ponha o APK num link).
+   b) No ADM Play, aba Feed > "Atualização do aplicativo": escreva a versão, cole o link
+      e toque em PUBLICAR ATUALIZAÇÃO. Para parar: DESLIGAR AVISO.
+4. Quem tem versão menor vê o aviso. Quando instala o app novo, o aviso some sozinho.
+   Tocar em "Atualizar" sem instalar NÃO apaga o aviso.
+
+REGRAS DO FIREBASE (necessário uma vez)
+No Firebase do feed (feed-app-fa204) > Realtime Database > Regras, o nó "atualizacao"
+precisa de leitura pública e de escrita para o ADM. Se aparecer
+"O Firebase do feed não deixou gravar" no ADM Play, é isto que falta.
+
+NOTAS
+- O aviso só aparece dentro do app, nunca no navegador.
+- O link tem de ser da Play Store ou de um APK. Um .aab não instala no telemóvel.
+- A versão instalada é lida do próprio app (median.deviceInfo).

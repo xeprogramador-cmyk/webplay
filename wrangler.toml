@@ -1,0 +1,11 @@
+name = "webplay-proxy"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# Cache KV (gratuito) — cria no painel Cloudflare e cola o ID aqui
+# [[kv_namespaces]]
+# binding = "CACHE"
+# id = "COLA_AQUI_O_ID_DO_KV"
+
+# Sem KV o Worker funciona na mesma (só sem cache entre pedidos).
+# Com KV a quota da TMDB baixa muito.

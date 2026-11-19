@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.webplay.app",
+    "sha256_cert_fingerprints": ["41:8A:1B:C8:96:74:4A:70:CB:AB:52:06:DE:C3:31:1C:4A:D9:80:66:F5:2A:44:E1:40:78:35:53:0A:B1:1B:5C"]
+  }
+}]
