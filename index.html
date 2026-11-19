@@ -1715,17 +1715,20 @@ try{var _l=new URLSearchParams(location.search).get("l");if(_l&&/^(pt|en|es|fr)$
 <script>
 /* ============ CONFIGURAÇÃO ============ */
 // Várias chaves TMDB: se uma falhar (429, chave inválida, etc.), usa a seguinte.
-/* MUDA SÓ A LINHA ABAIXO: cola a URL do teu Worker Cloudflare.
-   Enquanto tiver "TEU-USER", o site usa a TMDB direta (como antes). */
-const WP_PROXY = "https://webplay-proxy.TEU-USER.workers.dev";  // ← MUDA SÓ ESTA LINHA (URL do teu Worker)
+/* ===== PROXY CLOUDFLARE (substitui tmdb-cache.php + proxy.php) =====
+   1. Cria o Worker no Cloudflare (ver pasta worker/)
+   2. Cola aqui a URL do teu Worker (sem barra no fim)
+   Exemplo: "https://webplay-proxy.teu-user.workers.dev"
+*/
+const WP_PROXY = "https://shrill-wildflower-8161.xeprogramador.workers.dev";  // ← MUDA ISTO
 
 const TMDB_API_KEYS = [
   "1acb1965653f5c352ae66fdab15f5a09",
   "2eb588cabfd607f4abfa001a72e65fcb"
 ];
-let tmdbKeyIndex = 0; // chave ativa no momento (só fallback se o PHP falhar)
-// Cache no servidor — se WP_PROXY estiver definido, usa o Worker; senão tmdb-cache.php
-const TMDB_CACHE_PHP = (WP_PROXY && !/TEU-USER/.test(WP_PROXY)) ? (WP_PROXY + "/tmdb") : "tmdb-cache.php";
+let tmdbKeyIndex = 0; // só usado se o Worker falhar
+// Via Cloudflare Worker (cache + chave escondida)
+const TMDB_CACHE_PHP = WP_PROXY + "/tmdb";
 
 /* ============ CACHE PERSISTENTE (TMDB + SuperFlixAPI) ============
    Guarda respostas em memória (rápido nesta sessão) e no localStorage
@@ -2214,7 +2217,7 @@ async function primeiroServidorDisponivel(){
   return 0;
 }
 // proxy.php (no teu próprio servidor) evita CORS por completo — é tentado primeiro
-const OWN_PROXY = (WP_PROXY && !/TEU-USER/.test(WP_PROXY)) ? (WP_PROXY + "/proxy?url=") : "proxy.php?url=";
+const OWN_PROXY = WP_PROXY + "/proxy?url=";
 // proxies públicos de terceiros, só como reserva caso o proxy.php não esteja disponível
 const CORS_PROXIES = [
   url => "https://api.allorigins.win/raw?url=" + encodeURIComponent(url),
@@ -2321,7 +2324,7 @@ async function tmdbFetchViaServidor(path, forcarRefresh){
 // Se o PHP não existir (abrir o HTML em ficheiro local), cai para a TMDB direta.
 async function tmdbFetchComRetentativa(path, tentativa = 0, chaveTentada = 0, jaTentouPhp = false){
   path = wpIdiomaPath(path);
-  // --- Via Cloudflare Worker (só se WP_PROXY estiver preenchido) ---
+  // --- Via Cloudflare Worker (cache + chave no servidor) ---
   if(WP_PROXY && !/TEU-USER/.test(WP_PROXY)){
     try{
       const qs = "path=" + encodeURIComponent(path);
@@ -2329,7 +2332,10 @@ async function tmdbFetchComRetentativa(path, tentativa = 0, chaveTentada = 0, ja
       if(r.ok){
         try{ return await r.json(); }catch(e){}
       }
-    }catch(e){}
+      // Worker falhou → tenta TMDB direta em baixo
+    }catch(e){
+      // offline ou Worker ainda não configurado
+    }
   }
 
   // --- Fallback: TMDB direta (desenvolvimento / se o PHP falhar) ---
@@ -6394,7 +6400,7 @@ iniciarListenerFeed();
    3) O "+" leva à Área de publicação e acende verde/vermelho com o correio.
    Ajuste os dois endereços abaixo se os ficheiros estiverem noutra pasta.
    ===================================================================== */
-const URL_AREA_PUBLICACAO = "index-criador.html";  // botão + abre a área de criar/publicar
+const URL_AREA_PUBLICACAO = "index.html";
 const URL_CATALOGO_MANUAL = "catalogo.json";
 
 // pastas (Google Drive / Mega) com vários episódios dentro: mostradas numa moldura (iframe)

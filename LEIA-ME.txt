@@ -1,68 +1,22 @@
-================================================================================
-  WEBPLAY — SÓ COLAR NO CLOUDFLARE
-================================================================================
+COMO USAR
+1. Envie para o servidor, na mesma pasta: index-com-contagem.php (ou index-direto.php),
+   ponte-anuncio.php, atualizacao.js e atualizacao.json.
+   (O index já vem com o aviso ligado.)
+2. Use o ADMPlay.html (já com o cartão "Atualização do aplicativo" na aba Feed).
+3. Para lançar uma atualização:
+   a) Gere o app novo no Median com uma versão MAIOR (ex.: de 1.1.1 para 1.1.2) e publique
+      na Play Store (ou ponha o APK num link).
+   b) No ADM Play, aba Feed > "Atualização do aplicativo": escreva a versão, cole o link
+      e toque em PUBLICAR ATUALIZAÇÃO. Para parar: DESLIGAR AVISO.
+4. Quem tem versão menor vê o aviso. Quando instala o app novo, o aviso some sozinho.
+   Tocar em "Atualizar" sem instalar NÃO apaga o aviso.
 
-Fazes 3 coisas. Nada de PHP. Nada de InfinityFree.
+REGRAS DO FIREBASE (necessário uma vez)
+No Firebase do feed (feed-app-fa204) > Realtime Database > Regras, o nó "atualizacao"
+precisa de leitura pública e de escrita para o ADM. Se aparecer
+"O Firebase do feed não deixou gravar" no ADM Play, é isto que falta.
 
---------------------------------------------------------------------------------
-1) WORKER (proxy TMDB + SuperFlix)
---------------------------------------------------------------------------------
-  1. dash.cloudflare.com → Workers & Pages → Create → Create Worker
-  2. Nome: webplay-proxy
-  3. Apaga o código de exemplo
-  4. Abre worker/worker.js e cola TUDO
-  5. Deploy
-  6. Copia a URL (exemplo):
-       https://webplay-proxy.abc123.workers.dev
-
-  (Opcional) KV cache:
-       Workers → KV → Create "webplay-cache"
-       No Worker → Settings → Variables → KV binding name: CACHE
-       Deploy outra vez
-
---------------------------------------------------------------------------------
-2) UMA LINHA NO index.html
---------------------------------------------------------------------------------
-  Abre index.html e procura:
-
-    const WP_PROXY = "https://webplay-proxy.TEU-USER.workers.dev";
-
-  Troca TEU-USER pela tua URL real do passo 1.
-  Guarda.
-
---------------------------------------------------------------------------------
-3) SITE NO CLOUDFLARE PAGES
---------------------------------------------------------------------------------
-  Opção rápida (upload):
-    Workers & Pages → Create → Pages → Upload assets
-    Sobe TODOS os ficheiros desta pasta (exceto a pasta worker/ se quiseres)
-    Deploy
-
-  Opção GitHub:
-    Sobe esta pasta para um repositório
-    Pages → Connect to Git → Deploy (build vazio)
-
-  Ficas com: https://algo.pages.dev
-
---------------------------------------------------------------------------------
-O QUE CADA FICHEIRO É
---------------------------------------------------------------------------------
-  index.html            → site principal (catálogo)
-  index-criador.html    → botão + (criar / publicar)
-  worker/worker.js      → colar no Worker
-  idioma.js, etc.       → resto do site (não mexer)
-
-  Não precisas de: tmdb-cache.php, proxy.php, InfinityFree
-
---------------------------------------------------------------------------------
-TESTAR
---------------------------------------------------------------------------------
-  Abre o link do Pages.
-  Capas e géneros devem aparecer.
-  O botão + abre a área de criar.
-
-  Se algo falhar: F12 → Rede
-    - pedidos a ...workers.dev/tmdb  devem ser 200
-    - pedidos a ...workers.dev/proxy devem ser 200
-
-================================================================================
+NOTAS
+- O aviso só aparece dentro do app, nunca no navegador.
+- O link tem de ser da Play Store ou de um APK. Um .aab não instala no telemóvel.
+- A versão instalada é lida do próprio app (median.deviceInfo).

@@ -8,7 +8,7 @@
  *   - "mega-proxy.php"  → usa megaUrl()
  */
 
-const WP_PROXY = "https://webplay-proxy.TEU-USER.workers.dev"; // ← muda aqui
+const WP_PROXY = "https://shrill-wildflower-8161.xeprogramador.workers.dev"; // ← muda aqui
 
 function tmdbUrl(path) {
   // path deve começar com /  ex: "/movie/550" ou "/tv/1396/season/1"

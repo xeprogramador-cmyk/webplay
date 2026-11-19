@@ -2,55 +2,37 @@
   WEBPLAY — PACOTE PRONTO (HTML + Cloudflare Worker)
 ================================================================================
 
-O que está nesta pasta
-----------------------
-  index.html          → site principal (já preparado para o Worker)
-  idioma.js           → traduções
-  traducao-google.js  → Google Translate
-  firebase-config.js  → Firebase
+Worker já configurado:
+  https://shrill-wildflower-8161.xeprogramador.workers.dev
+
+O index.html já tem esta URL. Não precisas de mudar nada.
+
+================================================================================
+  O QUE ESTÁ NESTA PASTA (tudo na mesma pasta, sem subpastas)
+================================================================================
+  index.html              → site principal (já com o teu Worker)
+  idioma.js               → traduções
+  traducao-google.js      → Google Translate
+  firebase-config.js      → Firebase
   atualizacao.js + atualizacao.json
   webplay-tema.css + temas.json
   abrir.html + assetlinks.json
-  imagens (logos, APK banners)
   mega-titulos.json, redes-sociais.json, ia_config.json, sw.js
-  worker/             → código do Cloudflare Worker
-  docs/COMO-USAR.md   → explicação detalhada
+  worker.js + wrangler.toml   → código do Cloudflare Worker (já deployado)
+  config-exemplo.js
+  imagens (apk.png, logos webplay-*.png, etc.)
+  COMO-USAR.md, LEIA-ME.txt, LEIA-PRIMEIRO.txt
+  index-criador.html      → área de criação/publicação (opcional)
 
 ================================================================================
-  PASSOS (só isto)
+  SUBIR O SITE
 ================================================================================
+  - Sobe TODA esta pasta (todos os ficheiros juntos, na raiz) para:
+      • GitHub + Cloudflare Pages  (recomendado)
+      • Netlify / Vercel / qualquer alojamento estático
+      • Ou o teu servidor normal (já não precisas de PHP)
 
-1) CLOUDFLARE WORKER (2–5 minutos)
-   - Entra em https://dash.cloudflare.com
-   - Workers & Pages → Create → Create Worker
-   - Nome: webplay-proxy
-   - Apaga o código de exemplo
-   - Abre o ficheiro worker/worker.js e cola TUDO lá dentro
-   - Deploy
-   - Copia a URL que aparece, exemplo:
-       https://webplay-proxy.teu-user.workers.dev
-
-2) LIGAR O SITE AO WORKER (30 segundos)
-   - Abre index.html num editor de texto
-   - Procura esta linha (está perto do início do JavaScript):
-
-       const WP_PROXY = "https://webplay-proxy.TEU-USER.workers.dev";
-
-   - Substitui TEU-USER pela tua URL real do Worker
-   - Guarda o ficheiro
-
-3) SUBIR O SITE
-   - Podes subir TODA esta pasta para:
-       • GitHub + Cloudflare Pages  (recomendado)
-       • Netlify / Vercel / qualquer alojamento estático
-       • Ou o teu servidor normal (já não precisas de PHP)
-
-4) (OPCIONAL MAS RECOMENDADO) CACHE KV
-   - No Cloudflare: Workers → KV → Create namespace → nome: webplay-cache
-   - No teu Worker → Settings → Variables → KV Namespace Bindings
-   - Variable name: CACHE  |  Namespace: webplay-cache
-   - Deploy de novo
-   - Isto reduz muito o uso da quota da TMDB
+  Importante: NÃO criar subpastas. Todos os ficheiros na mesma pasta raiz.
 
 ================================================================================
   O QUE JÁ NÃO PRECISAS
@@ -63,13 +45,22 @@ O que está nesta pasta
 ================================================================================
   TESTAR
 ================================================================================
-  Depois de mudar a URL no index.html, abre o site e verifica se:
+  Abre o site e verifica se:
   - Capas dos filmes aparecem
   - Catálogo carrega
   - Não há erros de CORS na consola do browser (F12)
 
-  Se o Worker estiver bem, na consola de rede vais ver pedidos a:
-    https://webplay-proxy....workers.dev/tmdb?path=...
-    https://webplay-proxy....workers.dev/proxy?url=...
+  Na consola de rede deves ver pedidos a:
+    https://shrill-wildflower-8161.xeprogramador.workers.dev/tmdb?path=...
+    https://shrill-wildflower-8161.xeprogramador.workers.dev/proxy?url=...
+
+================================================================================
+  (OPCIONAL) CACHE KV no Worker
+================================================================================
+  - No Cloudflare: Workers → KV → Create namespace → nome: webplay-cache
+  - No teu Worker → Settings → Variables → KV Namespace Bindings
+  - Variable name: CACHE  |  Namespace: webplay-cache
+  - Deploy de novo
+  - Isto reduz muito o uso da quota da TMDB
 
 ================================================================================
