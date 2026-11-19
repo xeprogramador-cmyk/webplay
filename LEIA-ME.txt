@@ -1,22 +1,16 @@
-WEBPLAY — SÓ ESTES 3 FICHEIROS NO SERVIDOR
-==========================================
-
-Substitui na MESMA pasta do site (não apagues o resto):
-
+WEBPLAY — SUBSTITUI SÓ ESTES NO SERVIDOR
+========================================
   1. index.html
   2. atualizacao.js
-  3. atualizacao-app.js   (novo)
+  3. atualizacao-app.js
 
-Opcional no Cloudflare Worker: cola worker.js e Deploy.
+NÃO apagues o resto do site.
 
-O QUE ESTE INDEX FAZ:
-  - Mostra logo as capas guardadas no aparelho (se já visitou)
-  - Em paralelo atualiza com a rede (cache não trava o site)
-  - Os 4 catálogos (filme, série, anime, dorama) carregam juntos
-  - Se SuperFlix falhar, usa TMDB como lista
-  - Prioridade: capas do catálogo; "últimos episódios" depois
-  - Proxy Cloudflare para SuperFlix (evita CORS)
+CORREÇÃO DESTA VERSÃO:
+  - SuperFlix devolvia 429 (muitos pedidos) em Anime/Dorama
+    → o site ficava em "Loading…" para sempre
+  - Agora: se SuperFlix falhar/429, usa TMDB em poucos segundos
+  - "Últimos lançamentos" Anime/Dorama nunca ficam presos em Loading
+  - Cache local mostra capas antigas e atualiza em fundo
 
-DEPOIS DE SUBIR: Ctrl+F5 no app e no browser.
-  1ª visita pode demorar um pouco (grava cache).
-  2ª visita deve mostrar capas de imediato.
+DEPOIS: Ctrl+F5 no app e no browser.

@@ -2246,12 +2246,17 @@ async function fetchJSON(url){
 
   const _pedir = async (u) => {
     const ctrl = new AbortController();
-    const to = setTimeout(() => ctrl.abort(), 12000);
+    const to = setTimeout(() => ctrl.abort(), 10000);
     try{
       const r = await fetch(u, { signal: ctrl.signal });
-      if(!r.ok) throw new Error("status " + r.status);
       const txt = await r.text();
-      return JSON.parse(txt);
+      let dados;
+      try{ dados = JSON.parse(txt); }catch(e){ throw new Error("JSON inválido"); }
+      // SuperFlix devolve 429 com body { error: true, message: "Muitas requisições..." }
+      if(!r.ok || (dados && dados.error === true)){
+        throw new Error((dados && dados.message) || ("status " + r.status));
+      }
+      return dados;
     }finally{ clearTimeout(to); }
   };
 
@@ -2486,18 +2491,17 @@ async function listaViaTmdb(cat){
 }
 
 async function fetchAllIdsForCategory(cat){
-  // 1 página da SuperFlix basta para a 1ª ecrã; se falhar → TMDB discover
+  // SuperFlix costuma dar 429 (muitos pedidos). Timeout curto → TMDB discover.
   try{
     const r = await Promise.race([
       fetchAllIdsForCategorySF(cat, { maxPaginas: 1, paginaInicio: 1 }),
-      new Promise((_, rej) => setTimeout(() => rej(new Error("timeout lista")), 12000))
+      new Promise((_, rej) => setTimeout(() => rej(new Error("timeout lista")), 7000))
     ]);
-    if(r && r.ids && r.ids.length){
-      // Mais páginas em fundo (não bloqueia capas)
+    if(r && Array.isArray(r.ids) && r.ids.length){
       (async () => {
         try{
           const mais = await fetchAllIdsForCategorySF(cat, {
-            maxPaginas: 4,
+            maxPaginas: 3,
             paginaInicio: r.proximaPagina || 2,
             idsAcumulados: r.ids.slice(),
             vistos: r.vistos || new Set(),
@@ -2522,7 +2526,8 @@ async function fetchAllIdsForCategory(cat){
   }
   console.warn("SuperFlixAPI sem resposta para " + cat + " → a usar a TMDB como lista.");
   try{
-    return await listaViaTmdb(cat);
+    const ids = await listaViaTmdb(cat);
+    return Array.isArray(ids) ? ids : [];
   }catch(e2){
     return [];
   }
@@ -2747,11 +2752,13 @@ async function loadCategory(cat){
     resolverIdsProntos(idsDisponiveisSet);
     if(!allIds.length){
       if(snap && snap.cards.length){
-        // mantém snapshot se a rede veio vazia
         catalogState[cat] = { allIds: snap.ids || [], currentPage: 0 };
+        try{ await renderRecentes(cat, snap.ids || []); }catch(e){}
         return;
       }
       if(track) track.innerHTML = '<p class="empty">Sem itens disponíveis de momento.</p>';
+      const rt = document.getElementById("recente-" + cat);
+      if(rt) rt.innerHTML = '<p class="empty">Sem lançamentos recentes de momento.</p>';
       return;
     }
     catalogState[cat] = { allIds, currentPage: 0 };
@@ -2763,11 +2770,13 @@ async function loadCategory(cat){
       });
     }
 
-    // PRIORIDADE: grelha do catálogo (capas). Recentes depois, em fundo.
+    // PRIORIDADE: capas do catálogo; em seguida "Últimos lançamentos" desta categoria
     const cardsPagina = await renderPage(cat);
     if(cardsPagina && cardsPagina.length) gravarSnap(cardsPagina, allIds);
-    // Não atrasa o catálogo: recentes em fundo
-    setTimeout(function(){ try{ renderRecentes(cat, allIds); }catch(e){} }, 100);
+    try{ await renderRecentes(cat, allIds); }catch(e){
+      const rt = document.getElementById("recente-" + cat);
+      if(rt && !rt.querySelector(".card")) rt.innerHTML = '<p class="empty">Sem lançamentos recentes de momento.</p>';
+    }
   }catch(e){
     resolverIdsProntos(new Set());
     console.error("Erro em " + cat + ":", e);
@@ -2790,20 +2799,62 @@ async function renderRecentes(cat, allIds){
   const recenteTrack = document.getElementById("recente-" + cat);
   if(!recenteTrack) return;
 
-  const lote = allIds.slice(0, QTD_RECENTES);
-  recenteTrack.innerHTML = "";
+  const ids = Array.isArray(allIds) ? allIds : [];
+  const lote = ids.slice(0, QTD_RECENTES);
+
+  // Snapshot local dos recentes (mesmo aparelho)
+  const SNAP_R = "webplay_snap_rec_" + cat;
+  function lerSnapR(){
+    try{
+      const j = JSON.parse(localStorage.getItem(SNAP_R) || "null");
+      if(j && Array.isArray(j.cards) && j.cards.length) return j.cards;
+    }catch(e){}
+    return null;
+  }
+  function gravarSnapR(cards){
+    try{
+      const leve = (cards || []).slice(0, 12).map(d => ({
+        tmdbId: d.tmdbId, cat: d.cat, title: d.title, poster: d.poster,
+        year: d.year, tipoLabel: d.tipoLabel, genre: d.genre || ""
+      }));
+      localStorage.setItem(SNAP_R, JSON.stringify({ ts: Date.now(), cards: leve }));
+    }catch(e){}
+  }
+
+  // Mostra cache logo — nunca fica "A carregar…" para sempre
+  const snapCards = lerSnapR();
+  if(snapCards && snapCards.length){
+    recenteTrack.innerHTML = "";
+    snapCards.forEach(d => { try{ recenteTrack.appendChild(buildCard(d)); }catch(e){} });
+  } else {
+    recenteTrack.innerHTML = '<p class="loading">A carregar…</p>';
+  }
+
+  if(!lote.length){
+    if(!snapCards || !snapCards.length){
+      recenteTrack.innerHTML = '<p class="empty">Sem lançamentos recentes de momento.</p>';
+    }
+    ultimosLancamentosPorCategoria[cat] = snapCards || [];
+    return;
+  }
+
   const validos = [];
-  // Progressivo: cada capa aparece assim que chega (não espera o lote todo)
   for(let i = 0; i < lote.length; i += TAMANHO_GRUPO_TMDB){
     const fatia = lote.slice(i, i + TAMANHO_GRUPO_TMDB);
     const results = await Promise.all(fatia.map(item => tmdbDetailsFor(cat, item).catch(() => null)));
-    results.filter(Boolean).forEach(d => {
-      validos.push(d);
-      recenteTrack.appendChild(buildCard(d));
-    });
+    const ok = results.filter(Boolean);
+    if(i === 0 && ok.length){ recenteTrack.innerHTML = ""; }
+    ok.forEach(d => { validos.push(d); recenteTrack.appendChild(buildCard(d)); });
   }
-  ultimosLancamentosPorCategoria[cat] = validos;
-  if(!validos.length){ recenteTrack.innerHTML = '<p class="empty">Sem lançamentos recentes de momento.</p>'; }
+  if(validos.length){
+    ultimosLancamentosPorCategoria[cat] = validos;
+    gravarSnapR(validos);
+  } else if(!snapCards || !snapCards.length){
+    recenteTrack.innerHTML = '<p class="empty">Sem lançamentos recentes de momento.</p>';
+    ultimosLancamentosPorCategoria[cat] = [];
+  } else {
+    ultimosLancamentosPorCategoria[cat] = snapCards;
+  }
 }
 
 /* ============ ÚLTIMOS EPISÓDIOS (faixa na Início) — junta série+anime+
@@ -7022,15 +7073,19 @@ iniciarCorreioMais();
    Alimenta ao mesmo tempo: a grelha completa de cada aba, a prévia
    "Últimos lançamentos" da página Início, e o índice de pesquisa global —
    e, quando todas terminarem, monta o banner de destaques acima. */
-// 4 catálogos em paralelo; cada um isolado (se um falhar, os outros continuam)
-Promise.all(Object.values(CATEGORIA_DA_ABA).map(cat =>
-  loadCategory(cat).catch(e => console.error("catálogo " + cat + ":", e))
-)).then(() => {
+// Catálogos com pequeno atraso entre si (reduz 429 da SuperFlix); cada um isolado
+(async () => {
+  const ordem = ["filme", "serie", "anime", "dorama"];
+  const tarefas = ordem.map((cat, i) => new Promise(resolve => {
+    setTimeout(() => {
+      loadCategory(cat).catch(e => console.error("catálogo " + cat + ":", e)).finally(resolve);
+    }, i * 350);
+  }));
+  await Promise.all(tarefas);
   try{ montarBannerDestaques(); }catch(e){}
   try{ montarUltimosEpisodios(); }catch(e){}
-  // Ampliar episódios em fundo — NÃO atrasa capas do catálogo
   setTimeout(function(){ try{ ampliarUltimosEpisodios(); }catch(e){} }, 2500);
-});
+})();
 abrirDetalhesPelaUrl(); // LINK DIRETO: se a URL tem ?cat=&id=, abre direto a capa
 renderizarTodosOsMaisAcessados(); // NOVO: já não depende de a pessoa clicar em nenhum ícone
 montarContinuarAssistindo(); // NOVO: mostra logo o que já estava no histórico deste aparelho, antes mesmo de clicar em algo novo
