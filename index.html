@@ -16,6 +16,8 @@
 try{var _l=new URLSearchParams(location.search).get("l");if(_l&&/^(pt|en|es|fr)$/.test(_l)&&localStorage.getItem("webplay_idioma")!==_l)localStorage.setItem("webplay_idioma",_l);}catch(e){}</script>
 <script src="idioma.js"></script>
 <script src="traducao-google.js"></script>
+<link rel="preconnect" href="https://image.tmdb.org" crossorigin>
+<link rel="dns-prefetch" href="https://image.tmdb.org">
 <link rel="preconnect" href="https://uplcm.com">
 <link rel="dns-prefetch" href="https://uplcm.com">
 <meta charset="UTF-8">
@@ -2292,7 +2294,7 @@ async function fetchJSON(url){
 // aviso nenhum (por isso a busca "encontrava alguns e não outros"). Esta
 // fila limita quantos pedidos à TMDB andam em curso ao mesmo tempo, NO
 // SITE TODO (grelha + pesquisa), para nunca passar desse limite.
-const LIMITE_PEDIDOS_SIMULTANEOS_TMDB = 6;
+const LIMITE_PEDIDOS_SIMULTANEOS_TMDB = 12;
 let pedidosTmdbEmAndamento = 0;
 const filaEsperaTmdb = [];
 
@@ -2441,7 +2443,8 @@ async function tmdbSearch(query){
   return { movie, tv };
 }
 
-const POSTER = id => `https://image.tmdb.org/t/p/w300${id}`;
+const POSTER = id => `https://image.tmdb.org/t/p/w185${id}`;
+const POSTER_HD = id => `https://image.tmdb.org/t/p/w500${id}`;
 
 /* categoria SuperFlixAPI -> tipo TMDB */
 const TMDB_KIND = { filme:"movie", serie:"tv", anime:"tv", dorama:"tv" };
@@ -2451,8 +2454,8 @@ const PAGE_SIZE = 12; // cada clique em "Próximo" mostra mais 12 cards (3 colun
 // curta entre grupos, em vez de tudo de uma vez — pedir demais ao mesmo
 // tempo faz a TMDB começar a recusar pedidos a meio, e a página simplesmente
 // para de carregar (mesma lógica usada no Webplay).
-const TAMANHO_GRUPO_TMDB = 5;
-const PAUSA_ENTRE_GRUPOS_TMDB = 300;
+const TAMANHO_GRUPO_TMDB = 8;
+const PAUSA_ENTRE_GRUPOS_TMDB = 40;
 const catalogState = {}; // cat -> { allIds: [], currentPage: 0 }
 
 /* Busca TODAS as páginas do /lista da SuperFlixAPI para uma categoria, não só a
@@ -2483,34 +2486,61 @@ async function listaViaTmdb(cat){
 }
 
 async function fetchAllIdsForCategory(cat){
-  const _ids = await fetchAllIdsForCategorySF(cat);
-  if(_ids.length) return _ids;
+  // 1ª onda: só 2 páginas da SuperFlix → capas aparecem em segundos
+  try{
+    const r = await fetchAllIdsForCategorySF(cat, { maxPaginas: 2, paginaInicio: 1 });
+    if(r.ids.length){
+      // Continua a lista em fundo (até ~8 páginas extra) sem bloquear a UI
+      (async () => {
+        try{
+          const mais = await fetchAllIdsForCategorySF(cat, {
+            maxPaginas: 8,
+            paginaInicio: r.proximaPagina,
+            idsAcumulados: r.ids.slice(),
+            vistos: r.vistos,
+            assinatura: r.assinatura
+          });
+          if(mais.ids.length > (catalogState[cat] && catalogState[cat].allIds.length || 0)){
+            if(catalogState[cat]) catalogState[cat].allIds = mais.ids;
+            const set = new Set();
+            mais.ids.forEach(item => {
+              const bruto = typeof item === "object" ? (item.id ?? item.tmdb_id) : item;
+              if(bruto == null) return;
+              set.add(bruto); set.add(Number(bruto)); set.add(String(bruto));
+            });
+            catalogIdsProntos[cat] = Promise.resolve(set);
+          }
+        }catch(e){}
+      })();
+      return r.ids;
+    }
+  }catch(e){}
   console.warn("SuperFlixAPI sem resposta para " + cat + " → a usar a TMDB como lista.");
   return listaViaTmdb(cat);
 }
 
-async function fetchAllIdsForCategorySF(cat){
-  const idsAcumulados = [];
-  const vistos = new Set();
-  let pagina = 1;
-  const LIMITE_SEGURANCA_PAGINAS = 50; // trava de segurança, evita loop infinito
-  let assinaturaPaginaAnterior = null;
+async function fetchAllIdsForCategorySF(cat, opcoes){
+  const opts = opcoes || {};
+  // maxPaginas: quantas páginas pedir agora (rápido na 1ª pintura).
+  // O resto pode continuar em fundo via continuarListaSF.
+  const maxPaginas = opts.maxPaginas != null ? opts.maxPaginas : 50;
+  const idsAcumulados = opts.idsAcumulados || [];
+  const vistos = opts.vistos || new Set();
+  let pagina = opts.paginaInicio || 1;
+  let assinaturaPaginaAnterior = opts.assinatura || null;
+  const limite = pagina + maxPaginas - 1;
 
-  while(pagina <= LIMITE_SEGURANCA_PAGINAS){
+  while(pagina <= Math.min(limite, 50)){
     let resposta;
     try{
-      // order=desc garante que os mais recentes vêm primeiro — usado tanto
-      // pela grelha completa da aba como pela prévia "Últimos lançamentos"
-      // do Início (que só usa os primeiros itens deste array).
       resposta = await fetchJSON(`${SF_BASE}/lista?category=${cat}&type=tmdb&format=json&order=desc&page=${pagina}`);
     }catch(e){
-      break; // fica com o que já conseguiu buscar até aqui
+      break;
     }
 
     const lote = Array.isArray(resposta) ? resposta : (resposta.results || resposta.data || resposta.items || []);
     if(!lote.length) break;
 
-    // deteta se a API está a ignorar o "page" e a devolver sempre o mesmo conteúdo
     const assinaturaLote = lote.length + "|" + JSON.stringify(lote[0]);
     if(assinaturaLote === assinaturaPaginaAnterior) break;
     assinaturaPaginaAnterior = assinaturaLote;
@@ -2534,7 +2564,18 @@ async function fetchAllIdsForCategorySF(cat){
     pagina++;
   }
 
-  return idsAcumulados;
+  return {
+    ids: idsAcumulados,
+    vistos,
+    proximaPagina: pagina,
+    assinatura: assinaturaPaginaAnterior,
+    completo: pagina > 50 || (opts._forceComplete === true)
+  };
+}
+
+async function fetchAllIdsForCategorySFCompleto(cat){
+  const r = await fetchAllIdsForCategorySF(cat, { maxPaginas: 50, paginaInicio: 1 });
+  return r.ids;
 }
 
 // Cache partilhada dos detalhes de cada título (por categoria+ID), para nunca
@@ -2598,6 +2639,7 @@ async function tmdbDetailsFor(cat, item, opcoes){
       nome: details.next_episode_to_air.name || ""
     } : null,
     poster: details.poster_path ? POSTER(details.poster_path) : null,
+    posterHd: details.poster_path ? (typeof POSTER_HD === 'function' ? POSTER_HD(details.poster_path) : POSTER(details.poster_path)) : null,
     seasons: details.number_of_seasons || null,
     // NOVO: género(s), sinopse e o tipo (Filme/Série/Anime/Dorama) — usados
     // no topo do leitor, ao abrir um título.
@@ -2696,7 +2738,7 @@ async function loadCategory(cat){
   }
 }
 
-const QTD_RECENTES = 12;
+const QTD_RECENTES = 8;
 
 /* Preenche a linha "Últimos lançamentos" da página Início para uma
    categoria, a partir dos primeiros IDs já buscados (mais recentes). */
@@ -2705,13 +2747,19 @@ async function renderRecentes(cat, allIds){
   if(!recenteTrack) return;
 
   const lote = allIds.slice(0, QTD_RECENTES);
-  const results = await executarEmLotes(lote, TAMANHO_GRUPO_TMDB, item => tmdbDetailsFor(cat, item), PAUSA_ENTRE_GRUPOS_TMDB);
-  const validos = results.filter(Boolean);
-  ultimosLancamentosPorCategoria[cat] = validos; // NOVO: guarda pra faixa "Últimos Episódios"
-
   recenteTrack.innerHTML = "";
-  if(!validos.length){ recenteTrack.innerHTML = '<p class="empty">Sem lançamentos recentes de momento.</p>'; return; }
-  validos.forEach(d => recenteTrack.appendChild(buildCard(d)));
+  const validos = [];
+  // Progressivo: cada capa aparece assim que chega (não espera o lote todo)
+  for(let i = 0; i < lote.length; i += TAMANHO_GRUPO_TMDB){
+    const fatia = lote.slice(i, i + TAMANHO_GRUPO_TMDB);
+    const results = await Promise.all(fatia.map(item => tmdbDetailsFor(cat, item).catch(() => null)));
+    results.filter(Boolean).forEach(d => {
+      validos.push(d);
+      recenteTrack.appendChild(buildCard(d));
+    });
+  }
+  ultimosLancamentosPorCategoria[cat] = validos;
+  if(!validos.length){ recenteTrack.innerHTML = '<p class="empty">Sem lançamentos recentes de momento.</p>'; }
 }
 
 /* ============ ÚLTIMOS EPISÓDIOS (faixa na Início) — junta série+anime+
@@ -2832,23 +2880,30 @@ async function renderPage(cat){
   const track = document.getElementById("track-" + cat);
   const pag = document.getElementById("pag-" + cat);
   const state = catalogState[cat];
+  if(!state || !track) return;
   const totalPaginas = Math.max(1, Math.ceil(state.allIds.length / PAGE_SIZE));
 
   track.innerHTML = '<p class="loading">A carregar…</p>';
   const inicio = state.currentPage * PAGE_SIZE;
   const lote = state.allIds.slice(inicio, inicio + PAGE_SIZE);
-  const results = await executarEmLotes(lote, TAMANHO_GRUPO_TMDB, item => tmdbDetailsFor(cat, item), PAUSA_ENTRE_GRUPOS_TMDB);
 
-  track.innerHTML = "";
-  const validos = results.filter(Boolean);
-  if(!validos.length){ track.innerHTML = '<p class="empty">Sem itens disponíveis nesta página.</p>'; }
-  validos.forEach(d => track.appendChild(buildCard(d)));
+  let pintou = false;
+  let validos = 0;
+  for(let i = 0; i < lote.length; i += TAMANHO_GRUPO_TMDB){
+    const fatia = lote.slice(i, i + TAMANHO_GRUPO_TMDB);
+    const results = await Promise.all(fatia.map(item => tmdbDetailsFor(cat, item).catch(() => null)));
+    const ok = results.filter(Boolean);
+    if(!pintou){ track.innerHTML = ""; pintou = true; }
+    ok.forEach(d => { track.appendChild(buildCard(d)); validos++; });
+  }
+  if(!pintou) track.innerHTML = "";
+  if(!validos){ track.innerHTML = '<p class="empty">Sem itens disponíveis nesta página.</p>'; }
 
   if(pag){
     const btnVoltar = pag.querySelector('[data-dir="-1"]');
     const btnProximo = pag.querySelector('[data-dir="1"]');
-    btnVoltar.disabled = state.currentPage <= 0;
-    btnProximo.disabled = state.currentPage >= totalPaginas - 1;
+    if(btnVoltar) btnVoltar.disabled = state.currentPage <= 0;
+    if(btnProximo) btnProximo.disabled = state.currentPage >= totalPaginas - 1;
   }
 }
 
@@ -2931,7 +2986,7 @@ function buildCard(d, opcoes){
     meta = `${epInfo}${d.minutosAssistidos} min assistidos`;
   }
   el.innerHTML = `
-    <img class="poster" loading="lazy" src="${d.poster || ''}" alt="${d.title}" onerror="this.style.opacity=0">
+    <img class="poster" loading="lazy" decoding="async" fetchpriority="low" src="${d.poster || ''}" alt="${d.title}" onerror="this.style.opacity=0">
     <div class="card-topo-esq">
       ${tipo ? `<span class="card-tipo-badge">${tipo}</span>` : ""}
       <button type="button" class="card-btn-partilhar" title="Partilhar">${SVG_PARTILHAR}</button>
@@ -3905,8 +3960,9 @@ function abrirDetalhes(d){
   montarContinuarAssistindo(); // NOVO: atualiza a faixa "Continuar Assistindo" já com este clique
   registrarAcesso(d);
   renderizarTodosOsMaisAcessados(true); // NOVO: força reler do Firebase, para este acesso já entrar na contagem
-  detalhesCapaFundo.style.backgroundImage = d.poster ? `url('${d.poster}')` : "none";
-  { const p = document.getElementById("detalhesPoster"); p.src = d.poster || ""; p.style.opacity = d.poster ? 1 : 0;
+  const capaDet = d.posterHd || d.poster;
+  detalhesCapaFundo.style.backgroundImage = capaDet ? `url('${capaDet}')` : "none";
+  { const p = document.getElementById("detalhesPoster"); p.src = capaDet || ""; p.style.opacity = capaDet ? 1 : 0;
     const ida = document.getElementById("detalhesIdade"), v = d.idade ? (String(d.idade).toUpperCase() === "L" ? "L" : String(d.idade).replace(/^\+/, "")) : "";
     ida.textContent = v; ida.style.display = v ? "" : "none";
     atualizarBotaoLista(d); }
@@ -6919,7 +6975,16 @@ iniciarCorreioMais();
    Alimenta ao mesmo tempo: a grelha completa de cada aba, a prévia
    "Últimos lançamentos" da página Início, e o índice de pesquisa global —
    e, quando todas terminarem, monta o banner de destaques acima. */
-Promise.all(Object.values(CATEGORIA_DA_ABA).map(loadCategory)).then(() => {
+// Carrega categorias em cascata (não todas à vez) para não saturar a TMDB
+(async () => {
+  const cats = Object.values(CATEGORIA_DA_ABA);
+  // filme primeiro (mais pedido), resto a seguir em paralelo de 2
+  if(cats.includes("filme")) await loadCategory("filme").catch(()=>{});
+  const resto = cats.filter(c => c !== "filme");
+  for(let i = 0; i < resto.length; i += 2){
+    await Promise.all(resto.slice(i, i+2).map(c => loadCategory(c).catch(()=>{})));
+  }
+})().then(() => {
   montarBannerDestaques();
   montarUltimosEpisodios(); // NOVO: só dá pra ordenar por episódio mais recente depois de todas as categorias carregarem
   ampliarUltimosEpisodios(); // famosos e assistidos que lançaram episódio, mesmo não sendo novos no site

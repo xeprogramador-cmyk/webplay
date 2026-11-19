@@ -1,35 +1,21 @@
-WEBPLAY — SÓ O QUE PRECISAS SUBSTITUIR
-=====================================
+WEBPLAY — SÓ O QUE SUBSTITUIR (capas + velocidade + visitas + update)
+====================================================================
 
-NÃO apagues a pasta do site. Só substitui estes ficheiros
-(mesma pasta onde já está o teu index.html).
+NO SERVIDOR (mesma pasta do site) — substitui SÓ estes:
+  1. index.html           ← capas + velocidade + visitas
+  2. atualizacao.js
+  3. atualizacao-app.js   ← ficheiro NOVO
 
-NO SERVIDOR (site):
-  1. index.html          → substitui o antigo
-  2. atualizacao.js      → substitui o antigo
-  3. atualizacao-app.js  → ficheiro NOVO (cola na mesma pasta)
+NÃO mexas no resto (idioma.js, imagens, firebase, temas, etc.).
 
-NÃO mexas em:
-  idioma.js, imagens, firebase-config.js, atualizacao.json,
-  temas, mega-titulos.json, etc.
+CLOUDFLARE (painel do Worker, NÃO é pasta do site):
+  - Cola worker.js e faz Deploy (cache/proxy mais rápido)
 
-NO CLOUDFLARE (Worker) — opcional mas recomendado:
-  - Abre o teu Worker no painel Cloudflare
-  - Cola o conteúdo de worker.js e faz Deploy
-  - (Isto NÃO é ficheiro do site; não vai para a pasta do HTML)
+O QUE MUDOU NA VELOCIDADE:
+  - Lista SuperFlix: só 2 páginas no início (capas em segundos)
+  - Capas da grelha em w185 (mais leves)
+  - Pedidos TMDB em paralelo (12) e progressivos (cada capa aparece logo)
+  - Categorias em cascata (não 4 ao mesmo tempo)
+  - Cache no Worker + no aparelho
 
-O QUE ISTO CORRIGE:
-  - Capas em séries / animes / doramas (proxy SuperFlix)
-  - Contagem de utilizadores (Firebase visitas)
-  - Aviso de atualização do app (mais estável)
-
-DEPOIS DE SUBIR:
-  - Ctrl+F5 no site
-  - Testa Séries / Animes / Doramas
-  - Atualização: só aparece DENTRO do app Median
-  - Visitas: no Firebase feed → nó "visitas"
-
-REGRAS FIREBASE (feed-app-fa204):
-  O nó "visitas" precisa de leitura e escrita (senão a contagem
-  não grava). Exemplo no ficheiro CORRECAO-FIREBASE.md do pacote
-  completo, se precisares.
+DEPOIS: Ctrl+F5 no site e testa Séries/Animes/Doramas.
