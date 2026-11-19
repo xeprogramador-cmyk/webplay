@@ -1,16 +1,24 @@
-WEBPLAY — SUBSTITUI SÓ ESTES NO SERVIDOR
-========================================
+WEBPLAY — SÓ O NECESSÁRIO (tudo junto)
+=====================================
+
+No servidor, SUBSTITUI só estes 3 ficheiros (mesma pasta):
+
   1. index.html
   2. atualizacao.js
-  3. atualizacao-app.js
+  3. atualizacao-app.js   ← novo se ainda não existir
 
-NÃO apagues o resto do site.
+NÃO apagues idioma.js, imagens, firebase, temas, etc.
 
-CORREÇÃO DESTA VERSÃO:
-  - SuperFlix devolvia 429 (muitos pedidos) em Anime/Dorama
-    → o site ficava em "Loading…" para sempre
-  - Agora: se SuperFlix falhar/429, usa TMDB em poucos segundos
-  - "Últimos lançamentos" Anime/Dorama nunca ficam presos em Loading
-  - Cache local mostra capas antigas e atualiza em fundo
+Opcional Cloudflare: cola worker.js no Worker e faz Deploy.
 
-DEPOIS: Ctrl+F5 no app e no browser.
+O QUE ESTE PACOTE INCLUI (não esquecer):
+  ✓ Capas séries/animes/doramas (proxy Cloudflare + fallback TMDB)
+  ✓ SuperFlix 429 → lista pela TMDB /discover (com capas logo)
+  ✓ Cache no aparelho: mostra já + atualiza em fundo
+  ✓ 4 catálogos (filme, série, anime, dorama)
+  ✓ "Últimos lançamentos" não ficam em Loading nem vazios à toa
+  ✓ "A ligar ao servidor" fecha assim que há capas (máx. 7 s)
+  ✓ Contagem de visitas Firebase
+  ✓ Aviso de atualização do app
+
+Depois de subir: Ctrl+F5 no app e no browser.
