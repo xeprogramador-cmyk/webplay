@@ -2473,113 +2473,64 @@ const catalogState = {}; // cat -> { allIds: [], currentPage: 0 }
 async function listaViaTmdb(cat){
   const hoje = new Date().toISOString().slice(0,10);
   const base = {
-    filme:  { kind:"movie", q:`sort_by=popularity.desc&primary_release_date.lte=${hoje}&vote_count.gte=50&include_adult=false` },
-    serie:  { kind:"tv",    q:`sort_by=popularity.desc&first_air_date.lte=${hoje}&vote_count.gte=50&include_adult=false` },
-    anime:  { kind:"tv",    q:`sort_by=popularity.desc&with_genres=16&with_original_language=ja&vote_count.gte=20` },
-    dorama: { kind:"tv",    q:`sort_by=popularity.desc&with_original_language=ko&vote_count.gte=20` }
+    filme:  { kind:"movie", q:`sort_by=primary_release_date.desc&primary_release_date.lte=${hoje}&vote_count.gte=20&include_adult=false` },
+    serie:  { kind:"tv",    q:`sort_by=first_air_date.desc&first_air_date.lte=${hoje}&vote_count.gte=20&include_adult=false` },
+    anime:  { kind:"tv",    q:`sort_by=first_air_date.desc&first_air_date.lte=${hoje}&with_genres=16&with_original_language=ja&vote_count.gte=5` },
+    dorama: { kind:"tv",    q:`sort_by=first_air_date.desc&first_air_date.lte=${hoje}&with_original_language=ko&vote_count.gte=5` }
   }[cat];
   if(!base) return [];
   const ids = []; const vistos = new Set();
-  // Guarda resultados ricos (capa+título) para "Últimos lançamentos" sem 2º pedido
-  if(!window._tmdbDiscoverRich) window._tmdbDiscoverRich = {};
-  if(!window._tmdbDiscoverRich[cat]) window._tmdbDiscoverRich[cat] = [];
-  for(let p = 1; p <= 2; p++){
+  for(let p = 1; p <= 3; p++){
     let r = null;
     try{ r = await tmdb(`/discover/${base.kind}?${base.q}&page=${p}`); }catch(e){}
     const lote = (r && r.results) || [];
     if(!lote.length) break;
-    lote.forEach(x => {
-      if(!x || x.id == null || vistos.has(x.id)) return;
-      vistos.add(x.id);
-      ids.push(x.id);
-      window._tmdbDiscoverRich[cat].push(x);
-    });
+    lote.forEach(x => { if(x && x.id != null && !vistos.has(x.id)){ vistos.add(x.id); ids.push(x.id); } });
   }
   return ids;
 }
 
-/** Monta um card a partir do resultado /discover da TMDB (já traz poster_path). */
-function detalheDeDiscover(cat, it){
-  if(!it || !it.id) return null;
-  return {
-    tmdbId: it.id,
-    cat: cat,
-    title: it.title || it.name || "Sem título",
-    tituloOriginal: it.original_title || it.original_name || "",
-    year: (it.release_date || it.first_air_date || "").slice(0, 4),
-    poster: it.poster_path ? POSTER(it.poster_path) : null,
-    posterHd: it.poster_path && typeof POSTER_HD === "function" ? POSTER_HD(it.poster_path) : (it.poster_path ? POSTER(it.poster_path) : null),
-    genre: "",
-    overview: it.overview || "",
-    tipoLabel: (typeof TIPO_LABEL !== "undefined" && TIPO_LABEL[cat]) || cat,
-    nota: typeof it.vote_average === "number" ? it.vote_average : 0,
-    seasons: null,
-    ultimoEpisodio: null,
-    proximoEpisodio: null
-  };
-}
-
 async function fetchAllIdsForCategory(cat){
-  // SuperFlix e TMDB em paralelo: a primeira que trouxer IDs ganha.
-  // SuperFlix está a falhar com 429 — a TMDB cobre anime/dorama/filme/série.
-  const pSF = (async () => {
-    try{
-      const r = await Promise.race([
-        fetchAllIdsForCategorySF(cat, { maxPaginas: 1, paginaInicio: 1 }),
-        new Promise((_, rej) => setTimeout(() => rej(new Error("timeout SF")), 5000))
-      ]);
-      if(r && Array.isArray(r.ids) && r.ids.length) return { fonte: "sf", ids: r.ids, extra: r };
-    }catch(e){
-      console.warn("SuperFlix lista (" + cat + "):", e && e.message ? e.message : e);
-    }
-    return null;
-  })();
-  const pTMDB = (async () => {
-    try{
-      const ids = await listaViaTmdb(cat);
-      if(ids && ids.length) return { fonte: "tmdb", ids: ids };
-    }catch(e){}
-    return null;
-  })();
-
-  const primeiro = await Promise.race([
-    pSF.then(v => v || new Promise(() => {})), // se null, não resolve a race
-    pTMDB.then(v => v || new Promise(() => {})),
-    new Promise(resolve => setTimeout(() => resolve({ fonte: "vazio", ids: [] }), 8000))
-  ]);
-
-  let resultado = primeiro;
-  if(!resultado || !resultado.ids || !resultado.ids.length){
-    const ambos = await Promise.all([pSF, pTMDB]);
-    resultado = ambos.find(x => x && x.ids && x.ids.length) || { fonte: "vazio", ids: [] };
-  }
-
-  if(resultado.fonte === "sf" && resultado.extra){
-    const r = resultado.extra;
-    (async () => {
-      try{
-        const mais = await fetchAllIdsForCategorySF(cat, {
-          maxPaginas: 3,
-          paginaInicio: r.proximaPagina || 2,
-          idsAcumulados: r.ids.slice(),
-          vistos: r.vistos || new Set(),
-          assinatura: r.assinatura
-        });
-        if(mais && mais.ids && catalogState[cat] && mais.ids.length > catalogState[cat].allIds.length){
-          catalogState[cat].allIds = mais.ids;
-          const set = new Set();
-          mais.ids.forEach(item => {
-            const bruto = typeof item === "object" ? (item.id ?? item.tmdb_id) : item;
-            if(bruto == null) return;
-            set.add(bruto); set.add(Number(bruto)); set.add(String(bruto));
+  // SuperFlix costuma dar 429 (muitos pedidos). Timeout curto → TMDB discover.
+  try{
+    const r = await Promise.race([
+      fetchAllIdsForCategorySF(cat, { maxPaginas: 1, paginaInicio: 1 }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error("timeout lista")), 7000))
+    ]);
+    if(r && Array.isArray(r.ids) && r.ids.length){
+      (async () => {
+        try{
+          const mais = await fetchAllIdsForCategorySF(cat, {
+            maxPaginas: 3,
+            paginaInicio: r.proximaPagina || 2,
+            idsAcumulados: r.ids.slice(),
+            vistos: r.vistos || new Set(),
+            assinatura: r.assinatura
           });
-          catalogIdsProntos[cat] = Promise.resolve(set);
-        }
-      }catch(e){}
-    })();
+          if(mais && mais.ids && catalogState[cat] && mais.ids.length > catalogState[cat].allIds.length){
+            catalogState[cat].allIds = mais.ids;
+            const set = new Set();
+            mais.ids.forEach(item => {
+              const bruto = typeof item === "object" ? (item.id ?? item.tmdb_id) : item;
+              if(bruto == null) return;
+              set.add(bruto); set.add(Number(bruto)); set.add(String(bruto));
+            });
+            catalogIdsProntos[cat] = Promise.resolve(set);
+          }
+        }catch(e){}
+      })();
+      return r.ids;
+    }
+  }catch(e){
+    console.warn("SuperFlix lista (" + cat + "):", e && e.message ? e.message : e);
   }
-
-  return resultado.ids || [];
+  console.warn("SuperFlixAPI sem resposta para " + cat + " → a usar a TMDB como lista.");
+  try{
+    const ids = await listaViaTmdb(cat);
+    return Array.isArray(ids) ? ids : [];
+  }catch(e2){
+    return [];
+  }
 }
 
 async function fetchAllIdsForCategorySF(cat, opcoes){
@@ -2888,41 +2839,13 @@ async function renderRecentes(cat, allIds){
   }
 
   const validos = [];
-
-  // 1) Se veio do /discover da TMDB, já temos capa+título — pinta já
-  const ricos = (window._tmdbDiscoverRich && window._tmdbDiscoverRich[cat]) || [];
-  if(ricos.length){
-    recenteTrack.innerHTML = "";
-    ricos.slice(0, QTD_RECENTES).forEach(it => {
-      const d = detalheDeDiscover(cat, it);
-      if(!d) return;
-      validos.push(d);
-      recenteTrack.appendChild(buildCard(d));
-      // Preenche cache de detalhes para a grelha/pesquisa
-      try{
-        const chave = cat + ":" + d.tmdbId;
-        if(typeof tmdbDetailsCache !== "undefined" && !tmdbDetailsCache.has(chave)) tmdbDetailsCache.set(chave, d);
-      }catch(e){}
-    });
+  for(let i = 0; i < lote.length; i += TAMANHO_GRUPO_TMDB){
+    const fatia = lote.slice(i, i + TAMANHO_GRUPO_TMDB);
+    const results = await Promise.all(fatia.map(item => tmdbDetailsFor(cat, item).catch(() => null)));
+    const ok = results.filter(Boolean);
+    if(i === 0 && ok.length){ recenteTrack.innerHTML = ""; }
+    ok.forEach(d => { validos.push(d); recenteTrack.appendChild(buildCard(d)); });
   }
-
-  // 2) Completa com detalhes TMDB dos IDs que ainda faltam
-  if(validos.length < Math.min(QTD_RECENTES, lote.length || QTD_RECENTES)){
-    const ja = new Set(validos.map(d => d.tmdbId));
-    const falta = lote.filter(item => {
-      const id = typeof item === "object" ? (item.id ?? item.tmdb_id) : item;
-      return id != null && !ja.has(Number(id)) && !ja.has(id);
-    }).slice(0, QTD_RECENTES - validos.length);
-
-    for(let i = 0; i < falta.length; i += TAMANHO_GRUPO_TMDB){
-      const fatia = falta.slice(i, i + TAMANHO_GRUPO_TMDB);
-      const results = await Promise.all(fatia.map(item => tmdbDetailsFor(cat, item).catch(() => null)));
-      const ok = results.filter(Boolean);
-      if(!validos.length && ok.length) recenteTrack.innerHTML = "";
-      ok.forEach(d => { validos.push(d); recenteTrack.appendChild(buildCard(d)); });
-    }
-  }
-
   if(validos.length){
     ultimosLancamentosPorCategoria[cat] = validos;
     gravarSnapR(validos);
@@ -7254,44 +7177,27 @@ montarContinuarAssistindo(); // NOVO: mostra logo o que já estava no histórico
 <script>
 (function(){
   var el = document.getElementById("ligarServidor"), inicio = Date.now(), feito = false;
-  if(!el) return;
   function fechar(){
     if(feito) return; feito = true;
-    var espera = Math.max(0, 600 - (Date.now() - inicio)); // mínimo curto, não pisca
-    setTimeout(function(){
-      el.classList.add("some");
-      setTimeout(function(){ try{ el.remove(); }catch(e){} }, 350);
-    }, espera);
+    var espera = Math.max(0, 900 - (Date.now() - inicio)); // nunca pisca nem fica preso
+    setTimeout(function(){ el.classList.add("some"); setTimeout(function(){ el.remove(); }, 400); }, espera);
   }
-  // Fecha quando houver capas no Início OU mensagens de vazio (catálogo já respondeu).
-  // Não espera "todas" as imagens — basta um conjunto estável ou 1,2 s com cards.
+  // espera TODAS as capas que estão no ecrã abrirem (as de mais abaixo são "lazy" e só carregam
+  // ao descer, por isso só contam as visíveis). Fecha quando não há nenhuma por abrir durante ~1,2 s.
   var estavel = 0;
-  var vigia = setInterval(function(){
-    if(feito){ clearInterval(vigia); return; }
-    var cards = document.querySelectorAll("#page-inicio .card");
-    var vazios = document.querySelectorAll("#page-inicio .empty, #page-inicio .track .empty");
-    var imgs = document.querySelectorAll("#page-inicio .card img.poster");
-    var prontas = 0, totalImg = 0;
+  var vigiaCapas = setInterval(function(){
+    if(feito){ clearInterval(vigiaCapas); return; }
+    var imgs = document.querySelectorAll("#page-inicio .card img.poster, #page-inicio .card .poster img"), total = 0, faltam = 0;
     for(var i = 0; i < imgs.length; i++){
       var r = imgs[i].getBoundingClientRect();
-      if(r.width === 0 || r.top > window.innerHeight + 80 || r.bottom < -40) continue;
-      totalImg++;
-      if(imgs[i].complete) prontas++;
+      if(r.width === 0 || r.top > window.innerHeight || r.bottom < 0) continue;   // fora do ecrã
+      total++; if(!imgs[i].complete) faltam++;
     }
-    // Já há cards no ecrã e as capas visíveis carregaram (ou quase)
-    if(cards.length >= 3 && (totalImg === 0 || prontas >= Math.max(1, totalImg - 1))){
-      if(++estavel >= 2){ clearInterval(vigia); fechar(); return; }
-    } else if(cards.length >= 1 && prontas >= 1){
-      if(++estavel >= 4){ clearInterval(vigia); fechar(); return; }
-    } else if(vazios.length >= 2 && cards.length === 0){
-      // Catálogos responderam vazios — não prender o utilizador
-      clearInterval(vigia); fechar(); return;
-    } else {
-      estavel = 0;
-    }
-  }, 300);
-  // Máximo 7 s — nunca fica 15 s a "A ligar ao servidor"
-  setTimeout(function(){ clearInterval(vigia); fechar(); }, 7000);
+    if(total > 0 && faltam === 0){ if(++estavel >= 3){ clearInterval(vigiaCapas); fechar(); } } else estavel = 0;
+  }, 400);
+  // segurança: em TODAS as entradas (1ª vez ou não) espera no máximo 15 s (se as capas não abrirem)
+  var LIGAR_SERVIDOR_MAX_S = 15;
+  setTimeout(fechar, LIGAR_SERVIDOR_MAX_S * 1000);
 })();
 </script>
 
