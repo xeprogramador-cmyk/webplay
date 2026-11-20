@@ -56,22 +56,7 @@ const firebaseConfigChat = {
 
 const FIREBASE_CAMINHO_MENSAGENS_CHAT = "mensagens_yyago_chat";
 
-// --- 5b) PROXY PHP DA GROQ (Preenchimento Rápido do criador): a partir só
-// do título + tipo, devolve { sinopse, genero, capa } automaticamente, sem
-// perguntar nada à pessoa. Este usa a Groq (não a Gemini) — a chave da Groq
-// já fica só do lado do teu servidor, dentro desse proxy PHP; aqui no site
-// só cola o link completo do arquivo PHP assim que ele estiver no ar. Deixa
-// em branco ("") para desativar a busca automática — nesse caso o
-// Preenchimento Rápido pede esses 3 campos manualmente no passo final, sem
-// travar ninguém.
-// O site manda { titulo, tipo } em JSON para esse link, e espera de volta
-// { "sinopse": "...", "genero": "Ação, Aventura", "capa": "https://..." }
-// — é o teu proxy PHP quem por dentro chama a Groq com a tua chave e devolve
-// já pronto nesse formato.
-// NOTA: ao contrário do Leitor de Links (só do admin), este é usado por
-// qualquer criador, sem senha — se quiseres limitar o gasto de créditos da
-// IA, aplica um limite do lado do teu proxy PHP (ex.: por IP/dia).
-const URL_FUNCAO_INFO_CONTEUDO_IA = "";
+// (IA removida: o Preenchimento Rápido agora é todo manual.)
 
 // --- 6) LINKS DE CONTATO — aparecem só na mensagem de "não aprovado" (cena
 // vermelha do chat), como botões clicáveis para o usuário tirar dúvidas.
@@ -2147,8 +2132,7 @@ try{var _l=new URLSearchParams(location.search).get("l");if(_l&&/^(pt|en|es|fr)$
     <!-- NOVO: TELA DE ESCOLHA DO MODO DE PREENCHIMENTO — aparece depois das
          orientações e antes do formulário. Muita gente desiste de publicar
          por serem muitas informações de uma vez só; aqui a pessoa escolhe
-         entre um preenchimento guiado (um campo de cada vez, com a IA a
-         tentar preencher sinopse/gênero/foto sozinha) ou o formulário
+         entre um preenchimento guiado (um campo de cada vez, tudo manual) ou o formulário
          completo de sempre, com tudo visível de uma vez. -->
     <div id="tela-escolha-modo" class="tela-orientacoes" style="display:none;">
       <h1>📝 Como deseja preencher?</h1>
@@ -2158,7 +2142,7 @@ try{var _l=new URLSearchParams(location.search).get("l");if(_l&&/^(pt|en|es|fr)$
 
       <div class="orientacao-secao cartao-escolha-modo" style="border:1px solid #2ecc71;" onclick="escolherModoPreenchimento('rapido')">
         <h3>⚡ Preenchimento Rápido (recomendado)</h3>
-        <p>Um passo de cada vez: só o título, se é dublado/legendado, tipo e os links. O resto (sinopse, gênero e foto) a IA tenta preencher sozinha.</p>
+        <p>Um passo de cada vez: só o título, se é dublado/legendado, tipo e os links. A capa pode vir só do link do vídeo; a sinopse (e o gênero, se quiser) preenche à mão.</p>
         <button type="button" onclick="event.stopPropagation(); escolherModoPreenchimento('rapido')">Usar o Rápido</button>
       </div>
 
@@ -2203,7 +2187,7 @@ try{var _l=new URLSearchParams(location.search).get("l");if(_l&&/^(pt|en|es|fr)$
 
       <div id="passo-rapido-capa" class="passo-rapido" style="display:none;">
         <h1>🖼️ Tem o link da capa?</h1>
-        <p class="orientacoes-boasvindas">Opcional — se não tiveres, a IA tenta encontrar uma foto sozinha a partir do título.</p>
+        <p class="orientacoes-boasvindas">Opcional — se não tiveres, usamos a pré-visualização do link do vídeo como capa.</p>
         <input type="text" id="rapido-capa" placeholder="https://link-da-capa.jpg (opcional)" class="campo-rapido" oninput="atualizarPreviewImagem('rapido-capa','preview-rapido-capa')" onblur="atualizarPreviewImagem('rapido-capa','preview-rapido-capa')">
         <a href="#" class="link-ajuda-imagem" onclick="abrirAjudaLinkImagem(document.getElementById('rapido-capa'), document.getElementById('preview-rapido-capa')); return false;">Não tem o link mas tem a imagem no seu celular? Clique aqui</a>
         <a href="#" class="btn-personalizar-capa-rapido" onclick="abrirDesignerCapa('rapido-capa','preview-rapido-capa','rapido-titulo'); return false;">🎨 Criar capa personalizada (escolha o fundo e o tipo de letra)</a>
@@ -2228,7 +2212,7 @@ try{var _l=new URLSearchParams(location.search).get("l");if(_l&&/^(pt|en|es|fr)$
         <h1>🔗 Link do Google Drive</h1>
         <p class="orientacoes-boasvindas">Cola aqui o link do vídeo (Google Drive ou outro). Esta é a parte mais importante.</p>
         <input type="text" id="rapido-drive" placeholder="https://drive.google.com/file/d/..." class="campo-rapido">
-        <button type="button" class="btn-rapido-avancar" onclick="finalizarPreenchimentoRapido()">✨ Concluir e Preencher Automaticamente</button>
+        <button type="button" class="btn-rapido-avancar" onclick="finalizarPreenchimentoRapido()">✅ Concluir</button>
         <button type="button" class="btn-voltar-rapido" onclick="mostrarPassoRapido('passo-rapido-tipo')">◀ Voltar</button>
       </div>
 
@@ -2239,13 +2223,13 @@ try{var _l=new URLSearchParams(location.search).get("l");if(_l&&/^(pt|en|es|fr)$
         </p>
         <textarea id="rapido-links" rows="6" placeholder="https://link-episodio-1&#10;https://link-episodio-2&#10;https://link-episodio-3" class="campo-rapido" oninput="atualizarContagemLinksRapido()"></textarea>
         <p id="rapido-links-contagem" class="legenda-rapido"></p>
-        <button type="button" class="btn-rapido-avancar" onclick="finalizarPreenchimentoRapido()">✨ Concluir e Preencher Automaticamente</button>
+        <button type="button" class="btn-rapido-avancar" onclick="finalizarPreenchimentoRapido()">✅ Concluir</button>
         <button type="button" class="btn-voltar-rapido" onclick="mostrarPassoRapido('passo-rapido-tipo')">◀ Voltar</button>
       </div>
 
       <div id="passo-rapido-carregando" class="passo-rapido" style="display:none; text-align:center;">
         <h1>⏳ Só um momento...</h1>
-        <p class="orientacoes-boasvindas">A procurar sinopse, gênero e foto automaticamente.</p>
+        <p class="orientacoes-boasvindas">A buscar a pré-visualização do link para a capa…</p>
       </div>
 
       <!-- Tela "completar manualmente" — não é mais obrigatória (a publicação já
@@ -2450,14 +2434,14 @@ try{var _l=new URLSearchParams(location.search).get("l");if(_l&&/^(pt|en|es|fr)$
       <input type="text" id="criador_link" placeholder="Opcional — https://facebook.com/pagina">
 
       <label>Link da Capa do Filme (URL): *</label>
-      <input type="text" id="capa" placeholder="https://link-da-capa.jpg" oninput="atualizarPreviewImagem('capa','preview-capa-form')" onblur="atualizarPreviewImagem('capa','preview-capa-form')">
+      <input type="text" id="capa" placeholder="https://link-da-capa.jpg (opcional — sem capa, usa a pré-visualização do link)" oninput="this.dataset.auto='0';atualizarPreviewImagem('capa','preview-capa-form')" onblur="atualizarPreviewImagem('capa','preview-capa-form')">
       <a href="#" class="link-ajuda-imagem" onclick="abrirAjudaLinkImagem(document.getElementById('capa'), document.getElementById('preview-capa-form')); return false;">Não tem o link mas tem a imagem no seu celular? Clique aqui</a>
       <a href="#" class="btn-personalizar-capa-rapido" onclick="abrirDesignerCapa('capa','preview-capa-form','titulo'); return false;">🎨 Criar capa personalizada (escolha o fundo e o tipo de letra)</a>
       <div class="preview-imagem-card" id="preview-capa-form"><img alt="Pré-visualização da capa"></div>
 
       <div id="bloco-drive-unico">
         <label>Link do Vídeo (Google Drive):</label>
-        <input type="text" id="drive" placeholder="https://drive.google.com/file/d/...">
+        <input type="text" id="drive" placeholder="https://drive.google.com/file/d/..." oninput="aplicarCapaDoLink(this.value)">
       </div>
 
       <label class="toggle-episodios" for="chk-multi-episodios">
@@ -4374,7 +4358,7 @@ function preencherEpisodiosRapidos(links) {
 }
 
 // Passo final do Preenchimento Rápido: copia tudo para os campos reais do
-// formulário e tenta preencher sinopse/gênero/foto sozinho via IA, antes de
+// formulário (sem IA — tudo manual) e tenta a capa pela pré-visualização do link, antes de
 // chamar o mesmo gerarCodigo() de sempre.
 async function finalizarPreenchimentoRapido() {
   const titulo = document.getElementById('rapido-titulo').value.trim();
@@ -4438,23 +4422,17 @@ async function finalizarPreenchimentoRapido() {
     renderizarGeneroTags();
   }
 
-  mostrarPassoRapido('passo-rapido-carregando');
-  const infoIA = await buscarInfoConteudoAutomaticamente(titulo, tipo);
-
-  if (infoIA && infoIA.sinopse) document.getElementById('sinopse').value = infoIA.sinopse;
-  if (infoIA && infoIA.genero && !generoEscolhidoNaGrelha) {
-    generoTags = infoIA.genero.split(',').map(g => g.trim()).filter(Boolean);
-    renderizarGeneroTags();
-  }
-  if (infoIA && infoIA.capa && !capaDigitada) {
-    document.getElementById('capa').value = normalizarLinkImagem(infoIA.capa);
-    atualizarPreviewImagem('capa', 'preview-capa-form');
+  // Sem IA: sinopse e gênero são manuais. Só a capa tenta vir da pré-visualização do link.
+  if (!capaDigitada) {
+    mostrarPassoRapido('passo-rapido-carregando');
+    const capaLink = await capaAutomaticaDoLink(tipo === 'Filme' ? driveUnico : episodios[0]);
+    if (capaLink) {
+      document.getElementById('capa').value = capaLink;
+      atualizarPreviewImagem('capa', 'preview-capa-form');
+    }
   }
 
-  // NOVO: a IA pode não estar configurada, ter falhado, ou simplesmente não ter
-  // encontrado sinopse/gênero/capa — mas isso não trava mais a publicação. Segue
-  // sempre em frente mesmo faltando algum desses três; quem completa depois é o
-  // admin, exatamente como já acontece hoje quando falta o link de download.
+  // Se faltar sinopse (ou capa), a tela seguinte avisa exatamente o que falta preencher.
   concluirPreenchimentoRapidoFinal();
 }
 
@@ -4564,29 +4542,6 @@ async function concluirPreenchimentoRapidoFinal() {
     document.getElementById('campos-manuais-form').style.display = '';
   }
   window.scrollTo(0, 0);
-}
-
-// Busca sinopse, gênero e capa automaticamente, só com o título e o tipo,
-// através do teu proxy PHP da Groq (URL_FUNCAO_INFO_CONTEUDO_IA lá em cima —
-// a chave da Groq nunca aparece aqui no site, fica só no servidor).
-// Devolve null se a ponte não estiver configurada ou se algo falhar — o
-// passo final trata isso pedindo manualmente só o que faltar, sem travar
-// a publicação.
-async function buscarInfoConteudoAutomaticamente(titulo, tipo) {
-  if (!URL_FUNCAO_INFO_CONTEUDO_IA) return null;
-  try {
-    const resposta = await fetch(URL_FUNCAO_INFO_CONTEUDO_IA, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ titulo, tipo })
-    });
-    if (!resposta.ok) throw new Error('resposta ' + resposta.status);
-    const dados = await resposta.json();
-    return { sinopse: dados.sinopse || '', genero: dados.genero || '', capa: dados.capa || '' };
-  } catch (erro) {
-    console.error('Não consegui buscar informação automática:', erro);
-    return null;
-  }
 }
 
 // ==================== FIM: ESCOLHA DE MODO + PREENCHIMENTO RÁPIDO ====================
@@ -4955,6 +4910,65 @@ function normalizarLinkImagem(url) {
 // NOVO: mostra a imagem colada (capa ou foto do criador) num pequeno card,
 // assim que o link é digitado/colado — tanto na aba Criar quanto no Leitor e
 // Agrupador de Links. Some sozinho se o campo ficar vazio ou o link falhar.
+
+// ============================================================
+// NOVO: CAPA AUTOMÁTICA A PARTIR DO LINK (pré-visualização do link)
+// A pessoa só cola o link do vídeo; a miniatura dele vira a capa.
+// Drive e YouTube são lidos direto; outros links tentam o og:image via Microlink.
+// Se a pessoa escrever a sua própria capa, a dela manda sempre.
+// ============================================================
+function capaDoLinkSync(l) {
+  l = String(l || '').trim(); let m;
+  m = l.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/) || l.match(/drive\.google\.com\/(?:open|uc)\?(?:[^&]*&)*id=([a-zA-Z0-9_-]+)/);
+  if (m) return 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w600';
+  m = l.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:[^&]*&)*v=|shorts\/|embed\/))([a-zA-Z0-9_-]{11})/);
+  if (m) return 'https://img.youtube.com/vi/' + m[1] + '/hqdefault.jpg';
+  return '';
+}
+function imagemCarrega(url, ms) {
+  return new Promise(function (res) {
+    const im = new Image(); let fim = false;
+    const t = setTimeout(function () { if (!fim) { fim = true; res(false); } }, ms || 4000);
+    im.onload = function () { if (!fim) { fim = true; clearTimeout(t); res(im.naturalWidth > 40); } };
+    im.onerror = function () { if (!fim) { fim = true; clearTimeout(t); res(false); } };
+    im.src = url;
+  });
+}
+const _cacheCapaLink = {};
+async function capaAutomaticaDoLink(l) {
+  l = String(l || '').trim();
+  if (!/^https?:\/\//i.test(l)) return '';
+  if (_cacheCapaLink[l] !== undefined) return _cacheCapaLink[l];
+  let r = '';
+  try {
+    const direta = capaDoLinkSync(l);
+    if (direta && await imagemCarrega(direta, 4000)) r = direta;
+    if (!r) {
+      const ctrl = new AbortController(); const t = setTimeout(function () { ctrl.abort(); }, 6000);
+      const resp = await fetch('https://api.microlink.io/?url=' + encodeURIComponent(l), { signal: ctrl.signal });
+      clearTimeout(t);
+      if (resp.ok) {
+        const j = await resp.json();
+        const u = j && j.data && j.data.image && j.data.image.url;
+        if (u && await imagemCarrega(u, 4000)) r = u;
+      }
+    }
+  } catch (e) { /* sem pré-visualização: a pessoa coloca a capa à mão */ }
+  _cacheCapaLink[l] = r;
+  return r;
+}
+// Formulário detalhado: ao colar o link, a capa aparece sozinha (se o campo estiver vazio).
+function aplicarCapaDoLink(l) {
+  const campo = document.getElementById('capa');
+  if (!campo || (campo.value.trim() && campo.dataset.auto !== '1')) return;
+  capaAutomaticaDoLink(l).then(function (c) {
+    if (c && (!campo.value.trim() || campo.dataset.auto === '1')) {
+      campo.value = c; campo.dataset.auto = '1';
+      atualizarPreviewImagem('capa', 'preview-capa-form');
+    }
+  });
+}
+
 function atualizarPreviewImagem(inputId, previewId) {
   const input = document.getElementById(inputId);
   const card = document.getElementById(previewId);
@@ -5144,7 +5158,7 @@ function tratarErroImagem(imgElement, titulo) {
       linha.id = `linha-ep-${id}`;
       linha.innerHTML = `
         <input type="text" class="ep-titulo" placeholder="Ep. ${numeroSugerido}" value="Episódio ${numeroSugerido}">
-        <input type="text" class="ep-link" placeholder="Link do Drive do episódio ${numeroSugerido}" onchange="aoMudarLinkEpisodioForm(this)">
+        <input type="text" class="ep-link" placeholder="Link do Drive do episódio ${numeroSugerido}" onchange="aoMudarLinkEpisodioForm(this)" oninput="if(this.closest('#lista-episodios-form')&&this.closest('#lista-episodios-form').querySelector('.ep-link')===this)aplicarCapaDoLink(this.value)">
         ${BTN_SINOPSE_EP_HTML}
         <button type="button" class="btn-remover-ep" onclick="removerLinhaEpisodio(${id})">×</button>
         ${CAMPO_SINOPSE_EP_HTML}
@@ -5978,7 +5992,7 @@ function confirmarVersaoAudio(audioEscolhido) {
       const criador_link = document.getElementById('criador_link').value.trim();
       if (criador_foto) localStorage.setItem('minha_foto_criador', criador_foto);
       if (criador_link) localStorage.setItem('meu_link_criador', criador_link);
-      const capa = normalizarLinkImagem(document.getElementById('capa').value.trim());
+      let capa = normalizarLinkImagem(document.getElementById('capa').value.trim());
       const sinopse = document.getElementById('sinopse').value.trim();
 
       const modoEpisodios = document.getElementById('chk-multi-episodios').checked;
@@ -6007,7 +6021,8 @@ function confirmarVersaoAudio(audioEscolhido) {
         }
 
         if(!titulo) { alert("Escreva o título."); return; }
-        if(!capa) { alert("A capa é obrigatória: cole o link da capa."); document.getElementById('capa').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+        if(!capa) { const _c = await capaAutomaticaDoLink(episodiosValidos[0].link); if (_c) { capa = _c; document.getElementById('capa').value = _c; atualizarPreviewImagem('capa','preview-capa-form'); } }
+        if(!capa) { alert("Não consegui tirar a capa do link. Cole o link da capa."); document.getElementById('capa').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
         if(!sinopse) { alert("A sinopse é obrigatória."); document.getElementById('sinopse').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
 
         episodiosArray = episodiosValidos;
@@ -6015,7 +6030,8 @@ function confirmarVersaoAudio(audioEscolhido) {
       } else {
         if(!titulo) { alert("Escreva o título."); return; }
         if(!drive) { alert("O link é obrigatório."); return; }
-        if(!capa) { alert("A capa é obrigatória: cole o link da capa."); document.getElementById('capa').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+        if(!capa) { const _c = await capaAutomaticaDoLink(drive); if (_c) { capa = _c; document.getElementById('capa').value = _c; atualizarPreviewImagem('capa','preview-capa-form'); } }
+        if(!capa) { alert("Não consegui tirar a capa do link. Cole o link da capa."); document.getElementById('capa').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
         if(!sinopse) { alert("A sinopse é obrigatória."); document.getElementById('sinopse').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
         // Mesmo em vídeo único, o array de episódios já sai com o marcador /*adicionar*/
         // no fim, para o administrador saber exatamente onde colar futuras partes/episódios.
