@@ -68,20 +68,35 @@
   addEventListener("popstate",function(){if(aberto)fechar(true);});
   addEventListener("message",function(e){if(e.data&&e.data.webplayReels==="fechar")fechar();});
 
-  // puxar para cima: o painel acompanha o dedo
-  var y0=null,x0=0,mov=false;
-  pega.addEventListener("pointerdown",function(e){y0=e.clientY;x0=e.clientX;mov=false;pega.setPointerCapture(e.pointerId);});
-  pega.addEventListener("pointermove",function(e){
-    if(y0===null)return;var d=y0-e.clientY;
-    if(d>6&&d>Math.abs(e.clientX-x0)){mov=true;if(!aberto){pano.classList.add("dentro","arrasta");criarIframe();pano.style.transform="translateY("+Math.max(0,innerHeight-d)+"px)";}}
-  });
-  function fim(e){
-    if(y0===null)return;var d=y0-e.clientY;y0=null;pano.classList.remove("arrasta");pano.style.transform="";
-    if((mov&&d>40)||(!mov&&Math.abs(d)<10)){pano.classList.remove("aberto");aberto=false;abrir();}
-    else if(!aberto){pano.classList.remove("dentro");if(iframe){iframe.remove();iframe=null;}}
+  // puxar para cima: o painel acompanha o dedo.
+  // No R: tocar OU puxar abre os Reels. No ícone do meio do menu (Séries): tocar vai ao separador do site, só PUXAR PARA CIMA abre os Reels.
+  function ligar(el,tocaAbre){
+    var y0=null,x0=0,mov=false,arrastou=false;
+    el.addEventListener("pointerdown",function(e){y0=e.clientY;x0=e.clientX;mov=false;arrastou=false;try{el.setPointerCapture(e.pointerId);}catch(x){}});
+    el.addEventListener("pointermove",function(e){
+      if(y0===null)return;var d=y0-e.clientY;
+      if(d>6&&d>Math.abs(e.clientX-x0)){mov=true;if(!aberto){pano.classList.add("dentro","arrasta");criarIframe();pano.style.transform="translateY("+Math.max(0,innerHeight-d)+"px)";}}
+    });
+    function fim(e){
+      if(y0===null)return;var d=y0-e.clientY;y0=null;pano.classList.remove("arrasta");pano.style.transform="";
+      if(mov)arrastou=true;
+      if((mov&&d>40)||(tocaAbre&&!mov&&Math.abs(d)<10)){pano.classList.remove("aberto");aberto=false;abrir();}
+      else if(!aberto){pano.classList.remove("dentro");if(iframe){iframe.remove();iframe=null;}}
+    }
+    el.addEventListener("pointerup",fim);el.addEventListener("pointercancel",fim);
+    el.addEventListener("touchmove",function(e){if(e.cancelable)e.preventDefault();},{passive:false});
+    // se foi um arrasto, não deixa o site tratar como clique (não muda de separador)
+    el.addEventListener("click",function(e){if(arrastou){arrastou=false;e.stopImmediatePropagation();e.preventDefault();}},true);
   }
-  pega.addEventListener("touchmove",function(e){e.preventDefault();},{passive:false});
-  pega.addEventListener("pointerup",fim);pega.addEventListener("pointercancel",fim);
+  ligar(pega,true);
+  var meio=null;
+  function ligarMeio(){
+    var nav=document.getElementById("bottomNav")||document.querySelector(".bottom-nav");if(!nav)return;
+    var cx=innerWidth/2,melhor=null,bd=1e9;
+    Array.prototype.forEach.call(nav.children,function(it){var r=it.getBoundingClientRect();if(r.width<=0)return;var d=Math.abs(r.left+r.width/2-cx);if(d<bd){bd=d;melhor=it;}});
+    if(melhor&&melhor!==meio&&!melhor.__wpr){meio=melhor;melhor.__wpr=1;melhor.style.touchAction="none";ligar(melhor,false);}
+  }
+  ligarMeio();setInterval(ligarMeio,1500);
 
   // link direto (widgets do app): /?reels=ID  → abre esse Reels; /?reels=1 → abre o início dos Reels
   try{
