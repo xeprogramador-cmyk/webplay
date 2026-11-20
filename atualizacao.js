@@ -1,5 +1,5 @@
-/* Aviso de atualização do aplicativo (Median).
-   Lê a versão REAL instalada no aparelho (median.deviceInfo) e compara com
+/* Aviso de atualização do aplicativo (WebPlay / Median).
+   Lê a versão REAL instalada no aparelho (WebPlayBridge.versao ou median.deviceInfo) e compara com
    o nó Firebase "atualizacao" (projeto feed). Se o Firebase falhar, usa
    atualizacao.json como reserva.
    - Só aparece dentro do app (não no navegador).
@@ -19,6 +19,17 @@
   }
 
   function infoApp(cb){
+    // App nativo (WebPlay): a versão vem da ponte WebPlayBridge.versao()
+    try {
+      if(window.WebPlayBridge && typeof WebPlayBridge.versao === "function"){
+        var v = WebPlayBridge.versao();
+        if(v){ cb({ appVersion: String(v) }); return; }
+      } else if(window.WebPlayBridge){
+        // App WebPlay ANTIGO (anterior à 2.0.64): tem a ponte mas não sabe dizer a versão.
+        // Conta como versão antiga, por isso recebe o aviso e passa a funcionar após instalar a nova.
+        cb({ appVersion: "0.0.0" }); return;
+      }
+    } catch(e){}
     var tent = 0;
     (function tentar(){
       if(window.median && typeof median.deviceInfo === "function"){
@@ -112,7 +123,7 @@
       '<p class="atual"></p><div class="bar"><i></i></div><p class="st">Baixando a atualização…</p>' +
       '<div class="ac"></div></div>';
     t.querySelector(".v").textContent = c.versao;
-    t.querySelector(".atual").textContent = "Sua versão: " + atual;
+    t.querySelector(".atual").textContent = atual === "0.0.0" ? "Versão antiga instalada" : "Sua versão: " + atual;
     var ac = t.querySelector(".ac");
     var again = document.createElement("button"); again.className = "p"; again.textContent = "Baixar novamente";
     again.addEventListener("click", function(){ iniciarDownload(c.link); });
@@ -153,7 +164,7 @@
     var t = document.createElement("b"); t.textContent = "Atualize o aplicativo";
     var p = document.createElement("p");
     p.textContent = (c.mensagem || "Há uma nova versão do aplicativo disponível.") +
-                    " (Sua versão: " + atual + " → nova: " + c.versao + ")";
+                    (atual === "0.0.0" ? " (Nova versão: " + c.versao + ")" : " (Sua versão: " + atual + " → nova: " + c.versao + ")");
     var a = document.createElement("a"); a.className = "btn"; a.textContent = "Atualizar";
     a.href = c.link; a.rel = "noopener";
     a.addEventListener("click", function(e){ e.preventDefault(); telaAtualizando(c, atual); });
