@@ -2248,7 +2248,7 @@ async function fetchJSON(url){
     const ctrl = new AbortController();
     const to = setTimeout(() => ctrl.abort(), 10000);
     try{
-      const r = await fetch(u, { signal: ctrl.signal });
+      const r = await fetch(u, { signal: ctrl.signal, referrerPolicy: "no-referrer", cache: "no-store" });
       const txt = await r.text();
       let dados;
       try{ dados = JSON.parse(txt); }catch(e){ throw new Error("JSON inválido"); }
@@ -2480,12 +2480,19 @@ async function listaViaTmdb(cat){
   }[cat];
   if(!base) return [];
   const ids = []; const vistos = new Set();
-  for(let p = 1; p <= 3; p++){
-    let r = null;
-    try{ r = await tmdb(`/discover/${base.kind}?${base.q}&page=${p}`); }catch(e){}
-    const lote = (r && r.results) || [];
-    if(!lote.length) break;
-    lote.forEach(x => { if(x && x.id != null && !vistos.has(x.id)){ vistos.add(x.id); ids.push(x.id); } });
+  const TOTAL_PAGINAS_B = 12, LOTE_B = 4;
+  for(let ini = 1; ini <= TOTAL_PAGINAS_B; ini += LOTE_B){
+    const pedidos = [];
+    for(let p = ini; p < ini + LOTE_B && p <= TOTAL_PAGINAS_B; p++){
+      pedidos.push(tmdb(`/discover/${base.kind}?${base.q}&page=${p}`).catch(() => null));
+    }
+    const respostas = await Promise.all(pedidos);
+    let algum = false;
+    respostas.forEach(r => {
+      const lote = (r && r.results) || [];
+      lote.forEach(x => { algum = true; if(x && x.id != null && !vistos.has(x.id)){ vistos.add(x.id); ids.push(x.id); } });
+    });
+    if(!algum) break;
   }
   return ids;
 }
@@ -2495,7 +2502,7 @@ async function fetchAllIdsForCategory(cat){
   try{
     const r = await Promise.race([
       fetchAllIdsForCategorySF(cat, { maxPaginas: 1, paginaInicio: 1 }),
-      new Promise((_, rej) => setTimeout(() => rej(new Error("timeout lista")), 7000))
+      new Promise((_, rej) => setTimeout(() => rej(new Error("timeout lista")), 12000))
     ]);
     if(r && Array.isArray(r.ids) && r.ids.length){
       (async () => {
@@ -5680,7 +5687,7 @@ function atualizarVisibilidadeFeed(){
 // "+" → Área de publicação. Se houver aviso por ler (verde = aprovado, vermelho = recusado),
 // abre já o correio lá (?correio=1). URL_AREA_PUBLICACAO fica no bloco da ligação, mais abaixo.
 function aoClicarMais(){
-  const base = (typeof URL_AREA_PUBLICACAO !== "undefined") ? URL_AREA_PUBLICACAO : "index.html";
+  const base = (typeof URL_AREA_PUBLICACAO !== "undefined") ? URL_AREA_PUBLICACAO : "index/criador";
   const comAviso = (typeof estadoCorreioMais !== "undefined") && estadoCorreioMais;
   location.href = base + (comAviso ? "?correio=1" : "");
 }
@@ -6658,7 +6665,14 @@ iniciarListenerFeed();
    3) O "+" leva à Área de publicação e acende verde/vermelho com o correio.
    Ajuste os dois endereços abaixo se os ficheiros estiverem noutra pasta.
    ===================================================================== */
-const URL_AREA_PUBLICACAO = "index.html";
+let URL_AREA_PUBLICACAO = "index/criador";   // padrão: a Área de publicação agora é index/criador (não lê mais o index.html da raiz)
+/* O endereço pode ser trocado sem mexer no código: ficheiro config-index.json na mesma pasta, ex.: {"areaPublicacao":"index/criador"} */
+try{
+  fetch("config-index.json?t=" + Date.now(), { cache: "no-store" })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(j){ if(j && typeof j.areaPublicacao === "string" && j.areaPublicacao.trim()) URL_AREA_PUBLICACAO = j.areaPublicacao.trim(); })
+    .catch(function(){});
+}catch(e){}
 const URL_CATALOGO_MANUAL = "catalogo.json";
 
 // pastas (Google Drive / Mega) com vários episódios dentro: mostradas numa moldura (iframe)
