@@ -31,22 +31,27 @@
   var ponto=document.createElement("div");ponto.id="wpr-ponto";document.body.appendChild(ponto);
   var anim=null,ultimo="";
 
-  /* ---- SÓ NA PÁGINA INICIAL ----
-     Início = endereço da raiz (/, /index.html, /index.php) E, se o menu inferior tiver separador ativo, que seja o do Início/Home
-     (ou o primeiro). O site pode mandar a sua própria regra: window.WPR_NA_INICIAL = function(){ return true/false }. */
+  /* ---- SÓ ENQUANTO O MENU DE BAIXO ESTÁ À VISTA ----
+     O R aparece nas abas do menu (Início, Filmes, Séries, Animes, Doramas) e desaparece assim que alguma coisa
+     tapa o menu: ficha de série/filme, painel, leitor, etc. Volta quando o menu volta a ficar livre.
+     O site pode mandar a sua própria regra: window.WPR_NA_INICIAL = function(){ return true/false }. */
+  function dono(el){return el&&el.closest&&el.closest("#wpr-pega,#wpr-pano,#wpr-ponto");}
   function naInicial(){
     try{
       if(typeof window.WPR_NA_INICIAL==="function")return !!window.WPR_NA_INICIAL();
-      var p=location.pathname.replace(/\/+$/,"").toLowerCase();
-      if(p&&!/^\/(index(\.(html|php))?)?$/.test(p))return false;
       var nav=document.getElementById("bottomNav")||document.querySelector(".bottom-nav");
-      if(!nav)return true;
-      var at=nav.querySelector(".active,.on,.ativo,.selected,.atual,[aria-current]:not([aria-current=false]),[aria-selected=true]");
-      if(!at)return true;
-      var it=at;while(it.parentElement&&it.parentElement!==nav)it=it.parentElement;
-      var txt=((it.id||"")+" "+(it.getAttribute("data-tab")||it.getAttribute("data-page")||it.getAttribute("data-go")||it.getAttribute("href")||"")+" "+(it.textContent||"")).toLowerCase();
-      if(/in[ií]cio|inicio|home/.test(txt))return true;
-      return it===nav.children[0];
+      if(!nav)return false;
+      var cs=getComputedStyle(nav);
+      if(cs.display==="none"||cs.visibility==="hidden"||+cs.opacity===0)return false;
+      var r=nav.getBoundingClientRect();
+      if(r.width<=0||r.height<=0||r.bottom<=2||r.top>=innerHeight-2)return false;
+      var y=Math.min(innerHeight-2,Math.max(2,r.top+r.height/2)),xs=[r.left+r.width*0.12,r.left+r.width*0.5,r.left+r.width*0.88];
+      for(var k=0;k<xs.length;k++){
+        var x=Math.min(innerWidth-2,Math.max(2,xs[k])),pilha=document.elementsFromPoint(x,y),topo=null;
+        for(var q=0;q<pilha.length;q++){if(!dono(pilha[q])){topo=pilha[q];break;}}
+        if(!topo||!(nav===topo||nav.contains(topo)))return false;   // há algo por cima do menu
+      }
+      return true;
     }catch(e){return true;}
   }
   function visibilidade(){
@@ -54,10 +59,10 @@
     pega.style.display=ok?"":"none";
     if(!ok)ponto.style.display="none";
   }
-  setInterval(visibilidade,300);
+  setInterval(visibilidade,250);
   addEventListener("popstate",function(){setTimeout(visibilidade,50);});
   addEventListener("hashchange",function(){setTimeout(visibilidade,50);});
-  document.addEventListener("click",function(){setTimeout(visibilidade,80);},true);
+  document.addEventListener("click",function(){setTimeout(visibilidade,60);setTimeout(visibilidade,350);},true);
   function demo(){
     if(visto()||!naInicial()){ponto.style.display="none";if(anim){anim.cancel();anim=null;ultimo="";}return;}
     if(!meio)return;
