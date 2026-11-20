@@ -30,8 +30,36 @@
   document.body.appendChild(pega);document.body.appendChild(pano);
   var ponto=document.createElement("div");ponto.id="wpr-ponto";document.body.appendChild(ponto);
   var anim=null,ultimo="";
+
+  /* ---- SÓ NA PÁGINA INICIAL ----
+     Início = endereço da raiz (/, /index.html, /index.php) E, se o menu inferior tiver separador ativo, que seja o do Início/Home
+     (ou o primeiro). O site pode mandar a sua própria regra: window.WPR_NA_INICIAL = function(){ return true/false }. */
+  function naInicial(){
+    try{
+      if(typeof window.WPR_NA_INICIAL==="function")return !!window.WPR_NA_INICIAL();
+      var p=location.pathname.replace(/\/+$/,"").toLowerCase();
+      if(p&&!/^\/(index(\.(html|php))?)?$/.test(p))return false;
+      var nav=document.getElementById("bottomNav")||document.querySelector(".bottom-nav");
+      if(!nav)return true;
+      var at=nav.querySelector(".active,.on,.ativo,.selected,.atual,[aria-current]:not([aria-current=false]),[aria-selected=true]");
+      if(!at)return true;
+      var it=at;while(it.parentElement&&it.parentElement!==nav)it=it.parentElement;
+      var txt=((it.id||"")+" "+(it.getAttribute("data-tab")||it.getAttribute("data-page")||it.getAttribute("data-go")||it.getAttribute("href")||"")+" "+(it.textContent||"")).toLowerCase();
+      if(/in[ií]cio|inicio|home/.test(txt))return true;
+      return it===nav.children[0];
+    }catch(e){return true;}
+  }
+  function visibilidade(){
+    var ok=naInicial();
+    pega.style.display=ok?"":"none";
+    if(!ok)ponto.style.display="none";
+  }
+  setInterval(visibilidade,300);
+  addEventListener("popstate",function(){setTimeout(visibilidade,50);});
+  addEventListener("hashchange",function(){setTimeout(visibilidade,50);});
+  document.addEventListener("click",function(){setTimeout(visibilidade,80);},true);
   function demo(){
-    if(visto()){ponto.style.display="none";if(anim){anim.cancel();anim=null;}return;}
+    if(visto()||!naInicial()){ponto.style.display="none";if(anim){anim.cancel();anim=null;ultimo="";}return;}
     if(!meio)return;
     var a=meio.getBoundingClientRect(),r=pega.getBoundingClientRect();
     var x=a.left+a.width/2,y0=a.top+a.height/2,y1=r.top+r.height*0.45,chave=[x,y0,y1].map(Math.round).join();
@@ -75,7 +103,7 @@
   // No R: tocar OU puxar abre os Reels. No ícone do meio do menu (Séries): tocar vai ao separador do site, só PUXAR PARA CIMA abre os Reels.
   function ligar(el,tocaAbre){
     var y0=null,x0=0,mov=false,arrastou=false;
-    el.addEventListener("pointerdown",function(e){y0=e.clientY;x0=e.clientX;mov=false;arrastou=false;try{el.setPointerCapture(e.pointerId);}catch(x){}});
+    el.addEventListener("pointerdown",function(e){if(!naInicial()){y0=null;return;}y0=e.clientY;x0=e.clientX;mov=false;arrastou=false;try{el.setPointerCapture(e.pointerId);}catch(x){}});
     el.addEventListener("pointermove",function(e){
       if(y0===null)return;var d=y0-e.clientY;
       if(d>6&&d>Math.abs(e.clientX-x0)){mov=true;if(!aberto){pano.classList.add("dentro","arrasta");criarIframe();pano.style.transform="translateY("+Math.max(0,innerHeight-d)+"px)";}}
@@ -87,11 +115,11 @@
       else if(!aberto){pano.classList.remove("dentro");if(iframe){iframe.remove();iframe=null;}}
     }
     el.addEventListener("pointerup",fim);el.addEventListener("pointercancel",fim);
-    el.addEventListener("touchmove",function(e){if(e.cancelable)e.preventDefault();},{passive:false});
+    el.addEventListener("touchmove",function(e){if(naInicial()&&e.cancelable)e.preventDefault();},{passive:false});
     // se foi um arrasto, não deixa o site tratar como clique (não muda de separador)
     el.addEventListener("click",function(e){if(arrastou){arrastou=false;e.stopImmediatePropagation();e.preventDefault();}},true);
   }
-  ligar(pega,true);
+  ligar(pega,true);visibilidade();
   var meio=null;
   function ligarMeio(){
     var nav=document.getElementById("bottomNav")||document.querySelector(".bottom-nav");if(!nav)return;
