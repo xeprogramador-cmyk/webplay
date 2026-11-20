@@ -1964,9 +1964,29 @@ try{var _l=new URLSearchParams(location.search).get("l");if(_l&&/^(pt|en|es|fr)$
   <h1 style="font-size:20px;margin-bottom:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg>Publicar Reels</h1>
   <p style="font-size:12.5px;color:var(--muted,#8b93a7);margin-bottom:14px;">Filminhos, novelinhas e vídeos curtos. Só precisa da sinopse, da capa, do gênero e dos links — cada link é uma parte nova. A publicação passa pela análise da administração.</p>
   <div id="reels-conta" style="font-size:13px;margin-bottom:12px;"></div>
+  <div id="reels-modo" style="display:flex;gap:8px;margin-bottom:14px;">
+    <button type="button" id="reels-modo-novo" onclick="reelsModo('novo')">Novo Reels</button>
+    <button type="button" id="reels-modo-atual" onclick="reelsModo('atualizar')">Atualizar Reels</button>
+  </div>
+  <div id="reels-atualizar" style="display:none;margin-bottom:14px;">
+    <div id="reels-cat-pesquisa">
+      <label style="font-size:13px;font-weight:700;">Procure o Reels que quer atualizar</label>
+      <input type="text" id="reels-busca" oninput="reelsBuscar()" placeholder="Escreva o nome do Reels…" style="width:100%;margin:6px 0 10px;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;">
+      <div id="reels-cat-estado" style="font-size:12.5px;opacity:.8;margin:2px 0 8px;min-height:16px;"></div>
+      <div id="reels-cat-lista"></div>
+    </div>
+    <div id="reels-alvo" style="display:none;padding:12px;border:1px solid #f0b429;border-radius:12px;">
+      <div id="reels-alvo-nome" style="font-weight:800;font-size:14px;"></div>
+      <div id="reels-alvo-info" style="font-size:12.5px;opacity:.8;margin:4px 0 10px;"></div>
+      <button type="button" onclick="reelsTrocarAlvo()" style="padding:8px 14px;border-radius:10px;border:1px dashed var(--line,#252b38);background:none;color:inherit;font-weight:700;cursor:pointer;">Escolher outro Reels</button>
+    </div>
+  </div>
+  <div id="reels-bloco-novo">
+  <label style="font-size:13px;font-weight:700;">Nome do Reels <span style="font-weight:600;opacity:.7;">— sem capa, o nome aparece como capa</span></label>
+  <input type="text" id="reels-titulo" maxlength="80" oninput="reelsPreviewCapa()" placeholder="Ex.: A Herdeira Escondida" style="width:100%;margin:6px 0 10px;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;">
   <label style="font-size:13px;font-weight:700;">Sinopse</label>
   <textarea id="reels-sinopse" rows="4" maxlength="600" placeholder="Do que fala este Reels?" style="width:100%;margin:6px 0 12px;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;"></textarea>
-  <label style="font-size:13px;font-weight:700;">Capa (link da imagem)</label>
+  <label style="font-size:13px;font-weight:700;">Capa (link da imagem) — opcional</label>
   <input type="text" id="reels-capa" placeholder="https://link-da-capa.jpg" oninput="reelsPreviewCapa()" style="width:100%;margin:6px 0 8px;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;">
   <img id="reels-capa-prev" alt="" style="display:none;width:90px;height:120px;object-fit:cover;border-radius:10px;margin-bottom:12px;border:1px solid var(--line,#252b38);">
   <label style="font-size:13px;font-weight:700;display:block;">Gênero (escolha um ou mais)</label>
@@ -1975,11 +1995,21 @@ try{var _l=new URLSearchParams(location.search).get("l");if(_l&&/^(pt|en|es|fr)$
     <input type="text" id="reels-genero-outro" maxlength="24" placeholder="Outro gênero…" style="flex:1;min-width:0;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;">
     <button type="button" onclick="reelsAddGenero()" style="padding:9px 14px;border-radius:10px;border:1px dashed var(--line,#252b38);background:none;color:inherit;font-weight:700;cursor:pointer;">＋</button>
   </div>
+  </div>
   <label style="font-size:13px;font-weight:700;display:block;">Links (sem limite — cada um é uma parte) <span id="reels-count" style="opacity:.7;font-weight:600;"></span></label>
   <div id="reels-links" style="margin:6px 0 8px;"></div>
   <button type="button" onclick="reelsAddLink()" style="padding:9px 14px;border-radius:10px;border:1px dashed var(--line,#252b38);background:none;color:inherit;font-weight:700;cursor:pointer;">＋ Adicionar link</button>
   <textarea id="reels-bulk" rows="4" placeholder="Ou cole vários links de uma vez (um por linha, 30, 40, 50… sem limite)" style="width:100%;margin:10px 0 6px;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;resize:vertical;"></textarea>
   <button type="button" onclick="reelsColarLinks()" style="padding:9px 14px;border-radius:10px;border:1px dashed var(--line,#252b38);background:none;color:inherit;font-weight:700;cursor:pointer;">Adicionar todos os links colados</button>
+  <div style="margin:18px 0 4px;padding:12px;border:1px solid var(--line,#252b38);border-radius:12px;">
+    <div style="font-size:13.5px;font-weight:800;margin-bottom:4px;">O seu perfil e o seu anúncio</div>
+    <p style="font-size:12px;color:var(--muted,#8b93a7);margin-bottom:10px;">Quem assistir vê o seu nome e o seu perfil (“Siga este canal / servidor”). O link do anúncio abre dentro da app, entre os episódios que você publicou.</p>
+    <label style="font-size:13px;font-weight:700;">Link do seu perfil, canal ou servidor</label>
+    <input type="text" id="reels-perfil" oninput="reelsPerfilPrev()" placeholder="Facebook, WhatsApp, Telegram, Discord, e-mail…" style="width:100%;margin:6px 0 4px;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;">
+    <div id="reels-perfil-info" style="font-size:12px;min-height:16px;margin-bottom:10px;"></div>
+    <label style="font-size:13px;font-weight:700;">Link do seu anúncio (Monetag, Facebook ou outro)</label>
+    <input type="text" id="reels-anuncio" placeholder="https://..." style="width:100%;margin:6px 0 0;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;">
+  </div>
   <div id="reels-msg" style="font-size:13px;margin:12px 0;min-height:18px;"></div>
   <button type="button" id="reels-enviar" onclick="reelsEnviar()" style="width:100%;padding:13px;border-radius:12px;border:0;background:#f0b429;color:#1a1300;font-weight:800;font-size:15px;cursor:pointer;">Enviar para análise</button>
 </section>
@@ -8382,6 +8412,8 @@ carregar(true);
 <script>
 (function(){
   var NO_PEDIDOS='reels_pedidos';
+  var NO_CATALOGO='reels'; // nó onde ficam os Reels já aprovados (a pesquisa de "Atualizar" lê daqui)
+  var modoReels='novo',alvoReels=null,catalogoReels=null;
   // Firebase só do Reels (projeto reels-c13dc) — o mesmo do reels.html e do ADM Play.
   var CONFIG_REELS = {
   apiKey: "AIzaSyBnUf6laHxpz_pfYBlK6kJeBYXrc_IeMSM",
@@ -8403,14 +8435,66 @@ carregar(true);
     return dbReelsCache;
   }
   function el(i){return document.getElementById(i);}
+/* Capa automática do Reels: quando não há imagem, desenha o nome do Reels com um fundo e uma letra que mudam com o gênero. */
+function capaReelsSVG(titulo,generos){
+  function esc(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  function norm(t){var s=String(t||'');try{s=s.normalize('NFD').replace(/[\u0300-\u036f]/g,'');}catch(e){}return s.toLowerCase().trim();}
+  // [cor 1, cor 2, cor do texto, cor de destaque, estilo: 's' = serifa itálica, 'b' = maiúsculas fortes]
+  var P={
+    'romance':['#ff6a95','#5e1347','#ffffff','#ffd1e1','s'],
+    'drama':['#4a5a94','#10132b','#ffffff','#c7d0ff','s'],
+    'comedia':['#ffd23f','#ff7a18','#2a1600','#ffffff','b'],
+    'acao':['#ff5a1f','#1b0a05','#ffffff','#ffd23f','b'],
+    'suspense':['#2f3b45','#07090d','#ffffff','#4fd1c5','b'],
+    'terror':['#2a0000','#000000','#ff3b30','#7a0000','b'],
+    'fantasia':['#8b3dff','#150a3a','#ffffff','#f0c6ff','s'],
+    'ficcao cientifica':['#00b4ff','#070b36','#ffffff','#7df9ff','b'],
+    'aventura':['#16a085','#0a3326','#ffffff','#ffd27a','b'],
+    'familia':['#ffd37a','#ff8f70','#2a1600','#ffffff','s'],
+    'vinganca':['#a30f00','#1a1411','#ffffff','#ffb199','b'],
+    'misterio':['#4b2c7a','#12051f','#ffffff','#7df9ff','s']
+  };
+  var gs=(generos||[]).filter(Boolean),g0=norm(gs[0]);
+  var c=P[g0]||['#f0b429','#3a2400','#1a1300','#ffffff','s'];
+  var caps=c[4]==='b';
+  var nome=String(titulo||'Reels').trim().replace(/\s+/g,' ');
+  if(caps)nome=nome.toUpperCase();
+  var pal=nome.split(' '),linhas=[],cur='';
+  pal.forEach(function(w){if(!cur)cur=w;else if((cur+' '+w).length<=12)cur+=' '+w;else{linhas.push(cur);cur=w;}});
+  if(cur)linhas.push(cur);
+  if(linhas.length>5){linhas=linhas.slice(0,5);linhas[4]=linhas[4].slice(0,10)+'…';}
+  var maxLen=Math.max.apply(null,linhas.map(function(l){return l.length;}));
+  var fs=Math.max(18,Math.min(46,Math.floor(240/(maxLen*0.68))));
+  var lh=fs*1.2,y0=190-(lh*linhas.length)/2+fs*0.85;
+  var fam=caps?"'Arial Black','Helvetica Neue',Arial,sans-serif":"Georgia,'Times New Roman',serif";
+  var est=caps?'font-weight="900"':'font-weight="700" font-style="italic"';
+  var txt=linhas.map(function(l,i){
+    return '<text x="150" y="'+(y0+i*lh).toFixed(1)+'" text-anchor="middle" font-family="'+fam+'" '+est+' font-size="'+fs+'" fill="'+c[2]+'" filter="url(#sh)">'+esc(l)+'</text>';
+  }).join('');
+  var rot=gs.slice(0,2).map(function(x){return String(x).toUpperCase();}).join('  ·  ');
+  var svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" width="300" height="400">'
+   +'<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="'+c[0]+'"/><stop offset="1" stop-color="'+c[1]+'"/></linearGradient>'
+   +'<radialGradient id="r" cx=".5" cy=".38" r=".7"><stop offset="0" stop-color="'+c[3]+'" stop-opacity=".35"/><stop offset="1" stop-color="'+c[3]+'" stop-opacity="0"/></radialGradient>'
+   +'<filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity=".4"/></filter></defs>'
+   +'<rect width="300" height="400" fill="url(#g)"/><rect width="300" height="400" fill="url(#r)"/>'
+   +'<circle cx="265" cy="45" r="85" fill="'+c[3]+'" opacity=".12"/><circle cx="25" cy="375" r="105" fill="'+c[3]+'" opacity=".10"/>'
+   +'<rect x="14" y="14" width="272" height="372" rx="14" fill="none" stroke="'+c[3]+'" stroke-opacity=".45" stroke-width="1.5"/>'
+   +txt
+   +'<rect x="125" y="338" width="50" height="2" rx="1" fill="'+c[3]+'" opacity=".8"/>'
+   +(rot?'<text x="150" y="362" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="11" letter-spacing="3" fill="'+c[2]+'" opacity=".85">'+esc(rot)+'</text>':'')
+   +'</svg>';
+  return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+}
+
+  window.capaReelsSVG=capaReelsSVG;
   function nomeCriador(){return (el('reels-nome')&&el('reels-nome').value.trim())||localStorage.getItem('meu_nome_criador')||'';}
   function contaHtml(){
     var n=localStorage.getItem('meu_nome_criador')||'';
     el('reels-conta').innerHTML=n?('Publicando como <b>'+n.replace(/[<>&"]/g,'')+'</b>'):'<input type="text" id="reels-nome" placeholder="O seu nome de criador" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;">';
   }
   function reelsRenum(){
-    var box=el('reels-links');
-    Array.prototype.forEach.call(box.children,function(x,i){x.querySelector('.reels-n').textContent='Link '+(i+1);});
+    var box=el('reels-links'),base=(modoReels==='atualizar'&&alvoReels)?alvoReels.n:0,pre=base?'Parte ':'Link ';
+    Array.prototype.forEach.call(box.children,function(x,i){x.querySelector('.reels-n').textContent=pre+(base+i+1);});
     var c=el('reels-count');if(c)c.textContent='· '+box.children.length+(box.children.length===1?' link':' links');
   }
   window.reelsColarLinks=function(){
@@ -8439,22 +8523,27 @@ carregar(true);
       var b=document.createElement('button');b.type='button';b.textContent=g;
       var on=!!generosSel[g];
       b.style.cssText='padding:7px 13px;border-radius:999px;font-weight:700;font-size:12.5px;cursor:pointer;border:1px solid '+(on?'#f0b429':'var(--line,#252b38)')+';background:'+(on?'#f0b429':'none')+';color:'+(on?'#1a1300':'inherit')+';';
-      b.onclick=function(){if(generosSel[g])delete generosSel[g];else if(Object.keys(generosSel).length<5)generosSel[g]=1;pintarGeneros();};
+      b.onclick=function(){if(generosSel[g])delete generosSel[g];else if(Object.keys(generosSel).length<5)generosSel[g]=1;pintarGeneros();reelsPreviewCapa();};
       box.appendChild(b);
     });
   }
   window.reelsAddGenero=function(){
     var i=el('reels-genero-outro'),g=(i.value||'').trim().replace(/[<>&"]/g,'').slice(0,24);
-    if(!g)return;if(Object.keys(generosSel).length<5)generosSel[g]=1;i.value='';pintarGeneros();
+    if(!g)return;if(Object.keys(generosSel).length<5)generosSel[g]=1;i.value='';pintarGeneros();reelsPreviewCapa();
   };
-  window.reelsPreviewCapa=function(){var u=el('reels-capa').value.trim(),i=el('reels-capa-prev');if(/^https?:\/\//i.test(u)){i.src=u;i.style.display='block';}else i.style.display='none';};
+  window.reelsPreviewCapa=function(){
+    var u=el('reels-capa').value.trim(),i=el('reels-capa-prev'),t=(el('reels-titulo')&&el('reels-titulo').value||'').trim();
+    if(/^https?:\/\//i.test(u)){i.src=u;i.style.display='block';}
+    else if(t){i.src=capaReelsSVG(t,Object.keys(generosSel));i.style.display='block';}
+    else i.style.display='none';
+  };
   window.mostrarReelsCriar=function(){
     ['subnav-btn-publicar','subnav-btn-historico'].forEach(function(i){el(i).classList.remove('subnav-ativo');});
     el('subnav-btn-reels').classList.add('subnav-ativo');
     ['aviso-duplicidade-container','historico-container','form-atualizacao','form-publicacao','tela-preenchimento-rapido','tela-orientacoes','tela-escolha-modo'].forEach(function(i){var e=el(i);if(e)e.style.display='none';});
     el('form-reels').style.display='block';contaHtml();
     if(!el('reels-links').children.length){reelsAddLink();}
-    pintarGeneros();
+    pintarGeneros();reelsPrefill();window.reelsModo(modoReels);
     window.scrollTo(0,0);
   };
   // as outras abas escondem o formulário de Reels
@@ -8462,26 +8551,164 @@ carregar(true);
     var orig=window[nome];if(typeof orig!=='function')return;
     window[nome]=function(){var f=el('form-reels');if(f)f.style.display='none';var b=el('subnav-btn-reels');if(b)b.classList.remove('subnav-ativo');return orig.apply(this,arguments);};
   });
+  // ---- perfil / canal / servidor: reconhece o tipo de link e escolhe o texto "Siga este…"
+  function infoPerfil(u){
+    u=(u||'').trim();
+    if(/^[^\s@\/]+@[^\s@\/]+\.[^\s@\/]+$/.test(u))u='mailto:'+u;
+    if(/^mailto:/i.test(u))return {ok:/^mailto:[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(u),link:u,tipo:'email',rotulo:'Fale com este criador'};
+    if(!/^https?:\/\//i.test(u))return {ok:false,link:u,tipo:'',rotulo:''};
+    var h='',p='';
+    try{var x=new URL(u);h=x.hostname.replace(/^www\./,'').toLowerCase();p=x.pathname.toLowerCase();}catch(e){return {ok:false,link:u,tipo:'',rotulo:''};}
+    var tipo='outro',rot='Siga este perfil';
+    if(/(^|\.)whatsapp\.com$/.test(h)&&/\/channel\//.test(p)){tipo='whatsapp-canal';rot='Siga este canal';}
+    else if(h==='chat.whatsapp.com'){tipo='whatsapp-grupo';rot='Entre neste grupo';}
+    else if(/(^|\.)whatsapp\.com$/.test(h)||h==='wa.me'){tipo='whatsapp';rot='Fale no WhatsApp';}
+    else if(h==='t.me'||h==='telegram.me'||h==='telegram.dog'){tipo='telegram';rot='Siga este canal';}
+    else if(h==='discord.gg'||/(^|\.)discord\.com$/.test(h)){tipo='discord';rot='Entre neste servidor';}
+    else if(/(^|\.)(facebook\.com|fb\.com|fb\.me|fb\.watch)$/.test(h)){tipo='facebook';rot='Siga esta página';}
+    else if(/(^|\.)instagram\.com$/.test(h)){tipo='instagram';rot='Siga este perfil';}
+    else if(/(^|\.)tiktok\.com$/.test(h)){tipo='tiktok';rot='Siga este perfil';}
+    else if(/(^|\.)(youtube\.com|youtu\.be)$/.test(h)){tipo='youtube';rot='Siga este canal';}
+    return {ok:true,link:u,tipo:tipo,rotulo:rot};
+  }
+  window.reelsPerfilPrev=function(){
+    var i=el('reels-perfil'),o=el('reels-perfil-info');if(!i||!o)return;
+    var v=i.value.trim();if(!v){o.textContent='';return;}
+    var f=infoPerfil(v);
+    o.style.color=f.ok?'#3dd68c':'#ff9c94';
+    o.textContent=f.ok?('Vai aparecer: “'+f.rotulo+'”'):'Use um link https:// ou um e-mail.';
+  };
+  function reelsPrefill(){
+    try{
+      var p=localStorage.getItem('reels_perfil_link')||'',a=localStorage.getItem('reels_anuncio_link')||'';
+      if(p&&!el('reels-perfil').value)el('reels-perfil').value=p;
+      if(a&&!el('reels-anuncio').value)el('reels-anuncio').value=a;
+    }catch(e){}
+    window.reelsPerfilPrev();
+  }
+  // ---- modo "Atualizar": pesquisa no catálogo e acrescenta partes a um Reels que já existe
+  function semAcento(s){var t=(s||'').toString();try{t=t.normalize('NFD').replace(/[\u0300-\u036f]/g,'');}catch(e){}return t.toLowerCase();}
+  function estiloPilula(b,on){
+    if(!b)return;
+    b.style.cssText='flex:1;padding:10px 12px;border-radius:999px;font-weight:700;font-size:13px;cursor:pointer;border:1px solid '+(on?'#f0b429':'var(--line,#252b38)')+';background:'+(on?'#f0b429':'none')+';color:'+(on?'#1a1300':'inherit')+';';
+  }
+  function carregarCatalogo(fim){
+    var st=el('reels-cat-estado'),db=dbReels();
+    if(catalogoReels){fim();return;}
+    if(!db){st.textContent='Sem ligação ao servidor agora.';return;}
+    st.textContent='A carregar o catálogo…';
+    db.ref(NO_CATALOGO).once('value').then(function(s){
+      var v=s.val(),out=[];
+      if(v){
+        (Array.isArray(v)?v.map(function(_,i){return i;}):Object.keys(v)).forEach(function(k){
+          var r=v[k];if(!r||typeof r!=='object')return;
+          if(r.status==='pendente'||r.status==='rejeitado'||r.status==='recusado')return;
+          var ps=r.partes?(Array.isArray(r.partes)?r.partes:Object.keys(r.partes).map(function(x){return r.partes[x];})):[];
+          ps=ps.filter(Boolean);
+          var n=ps.length;
+          ps.forEach(function(p){if(p&&typeof p.parte==='number'&&p.parte>n)n=p.parte;});
+          out.push({id:String(r.id||k),titulo:String(r.titulo||r.nome||''),sinopse:String(r.sinopse||''),capa:String(r.capa||''),generos:Array.isArray(r.generos)?r.generos:[],criador:String(r.criador||''),n:n,t:Number(r.criadoEm)||0});
+        });
+      }
+      out.sort(function(a,b){return b.t-a.t;});
+      catalogoReels=out;st.textContent='';fim();
+    }).catch(function(){st.textContent='Não consegui carregar o catálogo de Reels. Tente de novo daqui a pouco.';});
+  }
+  function pintarCatalogo(){
+    var box=el('reels-cat-lista'),st=el('reels-cat-estado');
+    if(!box||!catalogoReels)return;
+    box.innerHTML='';
+    var q=semAcento(el('reels-busca').value.trim());
+    var lista=catalogoReels.filter(function(r){return !q||semAcento(r.titulo+' '+r.sinopse+' '+r.criador).indexOf(q)>=0;});
+    lista.slice(0,30).forEach(function(r){
+      var row=document.createElement('div');
+      row.style.cssText='display:flex;gap:10px;align-items:center;padding:8px;border:1px solid var(--line,#252b38);border-radius:12px;margin-bottom:8px;';
+      var img=document.createElement('img');img.alt='';
+      img.style.cssText='width:44px;height:58px;object-fit:cover;border-radius:8px;flex:0 0 44px;background:var(--panel2,#1a1f2a);';
+      img.src=/^https?:\/\//i.test(r.capa)?r.capa:capaReelsSVG(r.titulo||r.sinopse.slice(0,40),r.generos);
+      var txt=document.createElement('div');txt.style.cssText='flex:1;min-width:0;';
+      var t=document.createElement('div');
+      t.style.cssText='font-weight:700;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+      t.textContent=r.titulo||r.sinopse.slice(0,60)||'Sem nome';
+      var s=document.createElement('div');s.style.cssText='font-size:12px;opacity:.7;';
+      s.textContent=r.n+(r.n===1?' parte':' partes')+(r.criador?' · '+r.criador:'');
+      txt.appendChild(t);txt.appendChild(s);
+      var b=document.createElement('button');b.type='button';b.textContent='Atualizar';
+      b.style.cssText='padding:8px 14px;border-radius:10px;border:0;background:#f0b429;color:#1a1300;font-weight:800;font-size:13px;cursor:pointer;';
+      b.onclick=function(){escolherAlvo(r);};
+      row.appendChild(img);row.appendChild(txt);row.appendChild(b);box.appendChild(row);
+    });
+    if(!lista.length)st.textContent=q?'Nenhum Reels com esse nome.':'Ainda não há Reels publicados para atualizar.';
+    else st.textContent=lista.length>30?('A mostrar 30 de '+lista.length+' — escreva o nome para filtrar.'):'';
+  }
+  function escolherAlvo(r){
+    alvoReels=r;
+    el('reels-cat-pesquisa').style.display='none';
+    el('reels-alvo').style.display='block';
+    el('reels-alvo-nome').textContent='A atualizar: '+(r.titulo||r.sinopse.slice(0,50)||'Reels');
+    el('reels-alvo-info').textContent='Já tem '+r.n+(r.n===1?' parte':' partes')+' — as suas começam na parte '+(r.n+1)+'.';
+    reelsRenum();
+    window.scrollTo(0,0);
+  }
+  window.reelsTrocarAlvo=function(){
+    alvoReels=null;
+    el('reels-alvo').style.display='none';
+    el('reels-cat-pesquisa').style.display='block';
+    reelsRenum();
+  };
+  window.reelsBuscar=pintarCatalogo;
+  window.reelsModo=function(m){
+    modoReels=(m==='atualizar')?'atualizar':'novo';
+    var at=modoReels==='atualizar';
+    el('reels-bloco-novo').style.display=at?'none':'block';
+    el('reels-atualizar').style.display=at?'block':'none';
+    estiloPilula(el('reels-modo-novo'),!at);estiloPilula(el('reels-modo-atual'),at);
+    if(at)carregarCatalogo(pintarCatalogo);
+    reelsRenum();
+  };
   window.reelsEnviar=function(){
-    var msg=el('reels-msg'),sin=el('reels-sinopse').value.trim(),capa=el('reels-capa').value.trim(),nome=nomeCriador();
+    var msg=el('reels-msg'),nome=nomeCriador(),at=(modoReels==='atualizar');
     var links=Array.prototype.map.call(document.querySelectorAll('#reels-links .reels-link'),function(i){return i.value.trim();}).filter(Boolean);
     function erro(t){msg.style.color='#ff6b6b';msg.textContent=t;}
     if(!nome)return erro('Escreva o seu nome de criador.');
-    if(!sin)return erro('Escreva a sinopse.');
-    if(!/^https?:\/\//i.test(capa))return erro('Cole o link da capa (começa por https://).');
-    var generos=Object.keys(generosSel);
-    if(!generos.length)return erro('Escolha pelo menos um gênero (ou escreva outro).');
+    var sin='',capa='',titulo='',generos=[];
+    if(at){
+      if(!alvoReels)return erro('Procure e escolha o Reels que quer atualizar.');
+      sin=alvoReels.sinopse;capa=alvoReels.capa;titulo=alvoReels.titulo;
+    }else{
+      titulo=(el('reels-titulo').value||'').trim().replace(/[<>]/g,'');
+      sin=el('reels-sinopse').value.trim();capa=el('reels-capa').value.trim();
+      if(!sin)return erro('Escreva a sinopse.');
+      if(!capa&&!titulo)return erro('Sem capa, escreva o nome do Reels — ele aparece na capa.');
+      if(capa&&!/^https?:\/\//i.test(capa))return erro('O link da capa tem de começar por https:// (ou deixe em branco).');
+      generos=Object.keys(generosSel);
+      if(!generos.length)return erro('Escolha pelo menos um gênero (ou escreva outro).');
+    }
     if(!links.length)return erro('Adicione pelo menos um link.');
     if(links.some(function(l){return !/^https?:\/\//i.test(l);}))return erro('Todos os links têm de começar por https://');
-    var pedido={id:'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),criador:nome,sinopse:sin,capa:capa,
-      partes:links.map(function(l,i){return {parte:i+1,link:l};}),generos:generos,status:'pendente',criadoEm:Date.now()};
+    var pf=infoPerfil(el('reels-perfil').value);
+    if(!pf.ok)return erro('Coloque o link do seu perfil, canal ou servidor (https://… ou e-mail).');
+    var anu=(el('reels-anuncio').value||'').trim();
+    if(!/^https?:\/\//i.test(anu))return erro('Coloque o link do seu anúncio (Monetag, Facebook ou outro) — começa por https://');
+    var base=at?alvoReels.n:0;
+    var perfil={link:pf.link,tipo:pf.tipo,rotulo:pf.rotulo};
+    var pedido={id:'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),tipo:at?'atualizacao':'novo',criador:nome,titulo:titulo||'',sinopse:sin,capa:capa,
+      perfil:perfil,anuncio:anu,
+      partes:links.map(function(l,i){return {parte:base+i+1,link:l,criador:nome,perfil:perfil,anuncio:anu};}),
+      generos:generos,capaAuto:(!at&&!capa),status:'pendente',criadoEm:Date.now()};
+    if(at){pedido.alvoId=alvoReels.id;pedido.parteInicial=base+1;}
     var db=dbReels();
     if(!db)return erro('Sem ligação ao servidor agora. Tente de novo daqui a pouco.');
     el('reels-enviar').disabled=true;
     db.ref(NO_PEDIDOS+'/'+pedido.id).set(pedido).then(function(){
-      try{registarMensagemPendenteLocal({usuario:nome,titulo:'Reels: '+sin.slice(0,40),capa:capa,tipo:'Reels'});}catch(e){}
-      msg.style.color='#3dd68c';msg.textContent='Reels enviado para análise. Obrigado!';
-      el('reels-sinopse').value='';el('reels-capa').value='';el('reels-links').innerHTML='';reelsAddLink();reelsPreviewCapa();generosSel={};pintarGeneros();el('reels-enviar').disabled=false;
+      try{localStorage.setItem('reels_perfil_link',pf.link);localStorage.setItem('reels_anuncio_link',anu);}catch(e){}
+      try{registarMensagemPendenteLocal({usuario:nome,titulo:(at?'Atualização de Reels: ':'Reels: ')+(titulo||sin).slice(0,40),capa:capa,tipo:'Reels'});}catch(e){}
+      msg.style.color='#3dd68c';msg.textContent=at?'Atualização enviada para análise. Obrigado!':'Reels enviado para análise. Obrigado!';
+      el('reels-sinopse').value='';el('reels-capa').value='';el('reels-titulo').value='';el('reels-links').innerHTML='';
+      reelsPreviewCapa();generosSel={};pintarGeneros();
+      if(at)window.reelsTrocarAlvo();
+      reelsAddLink();
+      el('reels-enviar').disabled=false;
     }).catch(function(){el('reels-enviar').disabled=false;erro('Não foi possível enviar. Tente novamente.');});
   };
 })();
