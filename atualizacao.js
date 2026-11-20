@@ -7,6 +7,53 @@
    - Tocar em "Atualizar" sem instalar NÃO apaga o aviso. */
 (function(){
   var SESSAO = "webplay_upd_depois";
+  // APK colocado na RAIZ do site (GitHub/Cloudflare). Para outro nome/endereço, põe o campo "apk" no nó "atualizacao".
+  var APK_PADRAO = "app.apk";
+
+  function urlApk(c){
+    try { return new URL(c.apk || APK_PADRAO, location.href).href; } catch(e){ return APK_PADRAO; }
+  }
+  // Baixa o APK: app novo → DownloadManager do Android (ícone de download + instalador); app antigo → download pelo WebView.
+  function baixarApp(c){
+    try {
+      if(window.WebPlayBridge && typeof WebPlayBridge.baixarApk === "function"){ WebPlayBridge.baixarApk(urlApk(c)); return; }
+    } catch(e){}
+    iniciarDownload(urlApk(c));
+  }
+  // Abre o link principal (ADM Play) no Chrome, fora do app.
+  function abrirNaWeb(c){
+    try {
+      if(window.WebPlayBridge && typeof WebPlayBridge.abrirNavegador === "function"){ WebPlayBridge.abrirNavegador(c.link); return; }
+    } catch(e){}
+    try { window.open(c.link, "_blank", "noopener"); } catch(e){ location.href = c.link; }
+  }
+  function escolherModo(c, atual){
+    var velha = document.getElementById("wpUpdEsc"); if(velha) velha.remove();
+    if(!document.getElementById("wpUpdEscCss")){
+      var css = document.createElement("style"); css.id = "wpUpdEscCss";
+      css.textContent =
+        "#wpUpdEsc{position:fixed;inset:0;z-index:2147483647;background:rgba(10,12,16,.92);display:flex;align-items:center;justify-content:center;padding:24px;font-family:system-ui,sans-serif;color:#eae6dd;text-align:center}" +
+        "#wpUpdEsc .cx{max-width:380px;width:100%;background:#161a22;border:1px solid #2a303c;border-radius:18px;padding:22px}" +
+        "#wpUpdEsc h3{margin:0 0 6px;font-size:1.15rem}" +
+        "#wpUpdEsc p{margin:0 0 16px;font-size:.88rem;line-height:1.4;color:#9097a5}" +
+        "#wpUpdEsc button{display:block;width:100%;border:0;border-radius:14px;padding:13px;margin:8px 0 0;font-weight:bold;font-size:.95rem;cursor:pointer}" +
+        "#wpUpdEsc .p{background:#e0a33c;color:#1a1305}#wpUpdEsc .s{background:#232833;color:#eae6dd}#wpUpdEsc .x{background:transparent;color:#9097a5;font-weight:normal}";
+      document.head.appendChild(css);
+    }
+    var e = document.createElement("div"); e.id = "wpUpdEsc";
+    var cx = document.createElement("div"); cx.className = "cx";
+    var h = document.createElement("h3"); h.textContent = "Como queres atualizar?";
+    var p = document.createElement("p"); p.textContent = "Versão nova: " + c.versao;
+    var b1 = document.createElement("button"); b1.className = "p"; b1.textContent = "Atualizar no aplicativo";
+    b1.addEventListener("click", function(){ e.remove(); telaAtualizando(c, atual); });
+    var b2 = document.createElement("button"); b2.className = "s"; b2.textContent = "Atualizar pela web (Chrome)";
+    b2.addEventListener("click", function(){ e.remove(); abrirNaWeb(c); });
+    cx.appendChild(h); cx.appendChild(p); cx.appendChild(b1); cx.appendChild(b2);
+    var b3 = document.createElement("button"); b3.className = "x"; b3.textContent = "Voltar";
+    b3.addEventListener("click", function(){ e.remove(); });
+    cx.appendChild(b3);
+    e.appendChild(cx); document.body.appendChild(e);
+  }
 
   function partes(v){ return String(v||"0").split(/[^0-9]+/).filter(Boolean).map(Number); }
   function menor(a, b){
@@ -126,7 +173,7 @@
     t.querySelector(".atual").textContent = atual === "0.0.0" ? "Versão antiga instalada" : "Sua versão: " + atual;
     var ac = t.querySelector(".ac");
     var again = document.createElement("button"); again.className = "p"; again.textContent = "Baixar novamente";
-    again.addEventListener("click", function(){ iniciarDownload(c.link); });
+    again.addEventListener("click", function(){ baixarApp(c); });
     ac.appendChild(again);
     if(!c.obrigatoria){
       var fechar = document.createElement("button"); fechar.className = "s"; fechar.textContent = "Fechar";
@@ -134,11 +181,11 @@
       ac.appendChild(fechar);
     }
     document.body.appendChild(t);
-    iniciarDownload(c.link);
+    baixarApp(c);
     setTimeout(function(){
       var b = t.querySelector(".bar"); if(b) b.className = "bar ok";
       var st = t.querySelector(".st");
-      if(st) st.textContent = "Download iniciado. Quando terminar, abra o arquivo baixado e toque em Instalar.";
+      if(st) st.textContent = "Quando o download terminar, o instalador abre sozinho: toca em Instalar.";
     }, 3500);
   }
 
@@ -167,7 +214,7 @@
                     (atual === "0.0.0" ? " (Nova versão: " + c.versao + ")" : " (Sua versão: " + atual + " → nova: " + c.versao + ")");
     var a = document.createElement("a"); a.className = "btn"; a.textContent = "Atualizar";
     a.href = c.link; a.rel = "noopener";
-    a.addEventListener("click", function(e){ e.preventDefault(); telaAtualizando(c, atual); });
+    a.addEventListener("click", function(e){ e.preventDefault(); escolherModo(c, atual); });
     cx.appendChild(t); cx.appendChild(p); cx.appendChild(a);
     if(!c.obrigatoria){
       var b = document.createElement("button"); b.textContent = "Agora não";
