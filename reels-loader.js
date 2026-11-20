@@ -13,8 +13,8 @@
 
   var css=document.createElement("style");
   css.textContent=
-  "#wpr-pega{position:fixed;left:50%;transform:translateX(-50%);z-index:9998;width:130px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;touch-action:none;cursor:pointer;-webkit-tap-highlight-color:transparent;color:var(--muted,#8a8f9c)}"+
-  "#wpr-pega svg.arco{width:100px;height:30px;animation:wprb 2.2s ease-in-out infinite}"+
+  "#wpr-pega{position:fixed;left:50%;transform:translateX(-50%);z-index:9998;width:130px;height:40px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;touch-action:none;cursor:pointer;-webkit-tap-highlight-color:transparent;color:var(--muted,#8a8f9c)}"+
+  "#wpr-pega svg.arco{width:130px;height:34px;display:block;overflow:visible}"+
   "@keyframes wprb{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}"+
   /* demonstração da 1.ª vez */
   "#wpr-pega.treino{height:150px}"+
@@ -33,14 +33,18 @@
   pega.innerHTML=
    '<div id="wpr-dica">Puxa para cima</div>'+
    '<svg id="wpr-dedo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11V5.5a1.5 1.5 0 013 0V10m0-1.5a1.5 1.5 0 013 0V11m0-1a1.5 1.5 0 013 0v4.5a6.5 6.5 0 01-6.5 6.5h-1A6.5 6.5 0 017 15.5l-2.3-3.7a1.4 1.4 0 012.3-1.6L9 12.5"/></svg>'+
-   '<svg class="arco" viewBox="0 0 100 30" overflow="visible" fill="none"><path d="M6 24 Q28 24 38 12 Q50 -2 62 12 Q72 24 94 24" stroke="currentColor" stroke-width="7" stroke-linecap="round"/><circle cx="6" cy="24" r="5" fill="currentColor"/><circle cx="94" cy="24" r="5" fill="currentColor"/><text x="50" y="22" text-anchor="middle" font-family="system-ui,sans-serif" font-size="15" font-weight="800" fill="currentColor">R</text></svg>';
+   '<svg class="arco" viewBox="0 0 130 34"><path id="wpr-morro" d="M-2 35H14C40 35 42 4 65 4C88 4 90 35 116 35H132V36H-2Z" style="fill:var(--wpr-fundo,#0d0f14);stroke:none"/><text x="65" y="28" text-anchor="middle" font-family="system-ui,sans-serif" font-size="17" font-weight="800" fill="currentColor">R</text></svg>';
   var pano=document.createElement("div");pano.id="wpr-pano";
   document.body.appendChild(pega);document.body.appendChild(pano);
   if(!visto())pega.classList.add("treino");
 
   function posicionar(){
     var nav=document.getElementById("bottomNav")||document.querySelector(".bottom-nav");
-    pega.style.bottom=((nav?nav.getBoundingClientRect().height:0)+4)+"px";
+    pega.style.bottom=((nav?nav.getBoundingClientRect().height:0)-1)+"px";
+    try{var c=nav?getComputedStyle(nav).backgroundColor:"";
+      if(!c||/rgba?\(0,\s*0,\s*0,\s*0\)|transparent/.test(c)){c=getComputedStyle(document.body).getPropertyValue("--panel")||"#0d0f14";}
+      pega.style.setProperty("--wpr-fundo",c);
+    }catch(e){}
   }
   posicionar();addEventListener("resize",posicionar);setInterval(posicionar,2000);
 
