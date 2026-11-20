@@ -1,0 +1,103 @@
+=====================================================================
+ REELS PLAY — PACOTE COMPLETO (site + aplicativos)
+ Versões: ADM Play 1.3.1 · WebPlay (APP) 2.0.67
+=====================================================================
+
+O QUE VEM NESTE ZIP (tudo SOLTO, sem nenhuma pasta)
+- Arquivos do SITE (envie estes para o GitHub do site, todos na raiz, ao lado do index.html):
+    reels.html, reels-loader.js, reels.json, reels-firebase.js, _worker.js, index-criador.html
+- Só se um dia o site for Apache/PHP (não precisa no Cloudflare): reels-injetor.php, htaccess-reels.txt
+- Aplicativos (NÃO vão para o site; cada um é um projeto Android pronto para o GitHub, em outro repositório):
+    ADMPlay-app-v1_3_1.zip   (ADM Play 1.3.1 — com o widget "Reels · Análise")
+    APP-v2_0_67.zip          (WebPlay 2.0.67 — capturador também dentro do Reels)
+
+---------------------------------------------------------------------
+ 1) PRÉ-VISUALIZAÇÃO (para ver antes de publicar)
+---------------------------------------------------------------------
+ Abra previsao-3.html (ou previsao-reels.html) no Chrome, com reels.html na mesma pasta.
+ Mostra o Reels Play funcionando com dados de exemplo, o widget do ADM e a escolha de gênero.
+
+---------------------------------------------------------------------
+ 2) PUBLICAR O SITE (Cloudflare Pages: webplay-bqf.pages.dev)
+---------------------------------------------------------------------
+ a) Na RAIZ do projeto do site (ao lado do index.html) coloque, substituindo se já existirem:
+      reels.html, reels-loader.js, reels.json, reels-firebase.js e _worker.js (tudo solto, sem pasta)
+ b) Troque o index-criador.html pelo novo (agora pergunta o GÊNERO ao publicar um Reels).
+ c) O index.html do site NÃO é mexido: o _worker.js (arquivo solto na raiz) acrescenta 1 linha ao HTML em tempo real.
+    Para desligar os Reels: apague o _worker.js.
+    Atenção: se o seu site JÁ tiver um _worker.js ou uma pasta functions/, me avise antes de substituir.
+    (Só se um dia o site for Apache/PHP: use reels-injetor.php + as linhas de htaccess-reels.txt no .htaccess.)
+ d) Envie para o GitHub do site (ver item 4) — o Cloudflare Pages publica sozinho a cada envio.
+    Ou, sem GitHub: Cloudflare > Workers e Pages > seu projeto > Criar implantação > envie a pasta.
+
+ LINKS / PARTES SEM LIMITE
+ - No index-criador, "Adicionar link" não tem limite, e dá para colar 30, 40, 50 links de uma vez (um por linha).
+ - No Reels Play, a partir de 9 partes a barra vira uma grade rolável com só os números.
+
+ FIREBASE DO REELS (projeto reels-c13dc)
+ - O Reels usa um banco só dele: https://reels-c13dc-default-rtdb.firebaseio.com
+   O config fica em reels-firebase.js (site), dentro do index-criador.html (criador) e dentro do ADM Play 1.3.1
+   (painel e widget). Os três já apontam para esse banco.
+ - O resto do site e do ADM (feed, visitas, servidores, chat) continua nos bancos antigos.
+ - Regras do Realtime Database do reels-c13dc (Firebase > Realtime Database > Regras):
+   {
+     "rules": {
+       "reels_pedidos":     { ".read": true, ".write": true },
+       "reels_catalogo":    { ".read": true, ".write": true },
+       "reels_stats":       { ".read": true, ".write": true },
+       "reels_comentarios": { ".read": true, ".write": true }
+     }
+   }
+   Sem publicar essas regras, o criador não envia pedidos e o ADM não aprova.
+
+ O QUE O SITE FAZ AGORA
+ - Nome: Reels Play.
+ - Faixa de "stories" no topo: recém-lançados (últimos 7 dias) + em alta (populares).
+ - Banner grande: os 5 Reels MAIS ASSISTIDOS (visualizações reais, contadas no Firebase).
+ - Gêneros: filtro por gênero (os que existirem nos Reels aprovados). O criador escolhe o gênero ao publicar.
+ - Abas: Novos, Populares, Favoritos, A continuar.
+ - Leitor: favorito, estrelas (1 a 5, média e total) e comentários.
+ - Casa (ícone de contorno, sem cor) volta para a página inicial do site; puxar a tela para baixo (no topo do Reels) também volta.
+ - Vídeos: link direto (mp4/m3u8) toca em <video>; YouTube, Vimeo, Google Drive e Dailymotion viram iframe automaticamente;
+   qualquer outro link de embed é aberto num iframe. O ADM já guarda o link de iframe (embed) ao aprovar.
+
+---------------------------------------------------------------------
+ 3) COMPILAR OS APLICATIVOS (APK) — só com navegador/telemóvel
+---------------------------------------------------------------------
+ Para cada app (ADM Play e WebPlay):
+ a) Crie um repositório NOVO no GitHub (um para cada app).
+ b) Envie TODO o conteúdo da pasta do projeto (descompacte o zip primeiro), incluindo a pasta oculta .github
+    (e, no WebPlay, o arquivo debug.keystore).
+ c) No GitHub: aba Actions > "Compilar APK" > Run workflow.
+ d) Quando acabar (3-5 min): baixe o artefato (ADMPlay-apk ou WebPlay-APK), descompacte e instale o app-debug.apk por cima
+    (a versão é maior, então atualiza sem desinstalar).
+ e) Se der erro de compilação, copie as linhas vermelhas e me mande.
+
+ ADM Play 1.3.1: ecrã inicial > Widgets > ADMPlay > "Reels — Análise". Aprove/negue direto do widget.
+ WebPlay 2.0.67: o botão de captura continua em todos os locais; "Analisar página" varre também o painel do Reels.
+
+---------------------------------------------------------------------
+ 4) COMO COPIAR PARA O GITHUB (sem programar)
+---------------------------------------------------------------------
+ Pelo navegador:
+ a) github.com > "+" > New repository > dê um nome > Create repository.
+ b) Clique em "uploading an existing file" (ou Add file > Upload files).
+ c) Arraste os arquivos/pastas descompactados (não o .zip). Pastas ocultas (.github) só sobem por arrastar a pasta inteira
+    pelo computador; no telemóvel use o app GitHub ou o modo "Desktop site" do navegador.
+ d) Commit changes. Pronto.
+ Pelo computador (terminal):
+      git init
+      git add .
+      git commit -m "Reels Play"
+      git branch -M main
+      git remote add origin https://github.com/SEU-USUARIO/SEU-REPO.git
+      git push -u origin main
+
+---------------------------------------------------------------------
+ 5) PUBLICAR / DIVULGAR (ex.: YouTube)
+---------------------------------------------------------------------
+ - Os vídeos do Reels podem ser links do YouTube (watch, shorts, youtu.be): o Reels Play os converte para o player embutido.
+   O vídeo precisa estar "Público" ou "Não listado" e com a incorporação permitida (YouTube Studio > Detalhes > Mostrar mais >
+   "Permitir incorporação").
+ - Para divulgar o app no YouTube: grave a tela do telemóvel usando o próprio app (Reels, widget do ADM) e publique no YouTube
+   Studio > Criar > Enviar vídeos. Coloque o link da página de download do app na descrição.

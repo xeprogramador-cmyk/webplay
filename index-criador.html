@@ -1957,7 +1957,32 @@ try{var _l=new URLSearchParams(location.search).get("l");if(_l&&/^(pt|en|es|fr)$
     <div class="subnav-criar">
       <button id="subnav-btn-publicar" class="subnav-ativo" onclick="mostrarPublicarNovo()">📤 Publicar Novo</button>
       <button id="subnav-btn-historico" onclick="mostrarHistorico()">📜 Meu Histórico</button>
+      <button id="subnav-btn-reels" onclick="mostrarReelsCriar()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg>Publicar Reels</button>
     </div>
+<!-- ===== REELS: publicar um filminho / novela curta (sinopse, capa e links em partes) ===== -->
+<section id="form-reels" style="display:none;padding:16px;">
+  <h1 style="font-size:20px;margin-bottom:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg>Publicar Reels</h1>
+  <p style="font-size:12.5px;color:var(--muted,#8b93a7);margin-bottom:14px;">Filminhos, novelinhas e vídeos curtos. Só precisa da sinopse, da capa, do gênero e dos links — cada link é uma parte nova. A publicação passa pela análise da administração.</p>
+  <div id="reels-conta" style="font-size:13px;margin-bottom:12px;"></div>
+  <label style="font-size:13px;font-weight:700;">Sinopse</label>
+  <textarea id="reels-sinopse" rows="4" maxlength="600" placeholder="Do que fala este Reels?" style="width:100%;margin:6px 0 12px;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;"></textarea>
+  <label style="font-size:13px;font-weight:700;">Capa (link da imagem)</label>
+  <input type="text" id="reels-capa" placeholder="https://link-da-capa.jpg" oninput="reelsPreviewCapa()" style="width:100%;margin:6px 0 8px;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;">
+  <img id="reels-capa-prev" alt="" style="display:none;width:90px;height:120px;object-fit:cover;border-radius:10px;margin-bottom:12px;border:1px solid var(--line,#252b38);">
+  <label style="font-size:13px;font-weight:700;display:block;">Gênero (escolha um ou mais)</label>
+  <div id="reels-generos" style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 6px;"></div>
+  <div style="display:flex;gap:6px;margin-bottom:14px;">
+    <input type="text" id="reels-genero-outro" maxlength="24" placeholder="Outro gênero…" style="flex:1;min-width:0;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;">
+    <button type="button" onclick="reelsAddGenero()" style="padding:9px 14px;border-radius:10px;border:1px dashed var(--line,#252b38);background:none;color:inherit;font-weight:700;cursor:pointer;">＋</button>
+  </div>
+  <label style="font-size:13px;font-weight:700;display:block;">Links (sem limite — cada um é uma parte) <span id="reels-count" style="opacity:.7;font-weight:600;"></span></label>
+  <div id="reels-links" style="margin:6px 0 8px;"></div>
+  <button type="button" onclick="reelsAddLink()" style="padding:9px 14px;border-radius:10px;border:1px dashed var(--line,#252b38);background:none;color:inherit;font-weight:700;cursor:pointer;">＋ Adicionar link</button>
+  <textarea id="reels-bulk" rows="4" placeholder="Ou cole vários links de uma vez (um por linha, 30, 40, 50… sem limite)" style="width:100%;margin:10px 0 6px;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;resize:vertical;"></textarea>
+  <button type="button" onclick="reelsColarLinks()" style="padding:9px 14px;border-radius:10px;border:1px dashed var(--line,#252b38);background:none;color:inherit;font-weight:700;cursor:pointer;">Adicionar todos os links colados</button>
+  <div id="reels-msg" style="font-size:13px;margin:12px 0;min-height:18px;"></div>
+  <button type="button" id="reels-enviar" onclick="reelsEnviar()" style="width:100%;padding:13px;border-radius:12px;border:0;background:#f0b429;color:#1a1300;font-weight:800;font-size:15px;cursor:pointer;">Enviar para análise</button>
+</section>
 
     <!-- AVISO: lembrar o usuário de verificar duplicidade antes de publicar -->
     <div id="aviso-duplicidade-container" class="aviso-duplicidade">
@@ -8351,6 +8376,115 @@ carregar(true);
   window.arrecadarInformacoesTMDB = arrecadar;
 })();
 
+</script>
+
+
+<script>
+(function(){
+  var NO_PEDIDOS='reels_pedidos';
+  // Firebase só do Reels (projeto reels-c13dc) — o mesmo do reels.html e do ADM Play.
+  var CONFIG_REELS = {
+  apiKey: "AIzaSyBnUf6laHxpz_pfYBlK6kJeBYXrc_IeMSM",
+  authDomain: "reels-c13dc.firebaseapp.com",
+  databaseURL: "https://reels-c13dc-default-rtdb.firebaseio.com",
+  projectId: "reels-c13dc",
+  storageBucket: "reels-c13dc.firebasestorage.app",
+  messagingSenderId: "724261322347",
+  appId: "1:724261322347:web:db8a5cfe2ff6deff753b2e",
+  measurementId: "G-9RGBW7MTXL"
+};
+  var dbReelsCache=null;
+  function dbReels(){
+    if(dbReelsCache)return dbReelsCache;
+    try{
+      var a; try{a=firebase.app('reelsDb');}catch(e){a=firebase.initializeApp(CONFIG_REELS,'reelsDb');}
+      dbReelsCache=a.database();
+    }catch(e){console.warn('Firebase do Reels não iniciou',e);}
+    return dbReelsCache;
+  }
+  function el(i){return document.getElementById(i);}
+  function nomeCriador(){return (el('reels-nome')&&el('reels-nome').value.trim())||localStorage.getItem('meu_nome_criador')||'';}
+  function contaHtml(){
+    var n=localStorage.getItem('meu_nome_criador')||'';
+    el('reels-conta').innerHTML=n?('Publicando como <b>'+n.replace(/[<>&"]/g,'')+'</b>'):'<input type="text" id="reels-nome" placeholder="O seu nome de criador" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;">';
+  }
+  function reelsRenum(){
+    var box=el('reels-links');
+    Array.prototype.forEach.call(box.children,function(x,i){x.querySelector('.reels-n').textContent='Link '+(i+1);});
+    var c=el('reels-count');if(c)c.textContent='· '+box.children.length+(box.children.length===1?' link':' links');
+  }
+  window.reelsColarLinks=function(){
+    var t=el('reels-bulk'),box=el('reels-links');
+    var vals=(t.value.match(/https?:\/\/[^\s,;"'<>]+/g)||[]);
+    if(!vals.length){var m=el('reels-msg');if(m){m.style.color='#ff9c94';m.textContent='Nenhum link válido encontrado no texto colado.';}return;}
+    Array.prototype.slice.call(box.children).forEach(function(r){if(!r.querySelector('.reels-link').value.trim())r.remove();});
+    vals.forEach(function(v){reelsAddLink(v);});
+    t.value='';reelsRenum();
+    var m2=el('reels-msg');if(m2){m2.style.color='';m2.textContent=vals.length+' links adicionados.';}
+  };
+  window.reelsAddLink=function(v){
+    var box=el('reels-links'),n=box.children.length+1,d=document.createElement('div');
+    d.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:8px;';
+    d.innerHTML='<span class="reels-n" style="flex:0 0 62px;font-size:12px;font-weight:700;">Link '+n+'</span><input type="text" class="reels-link" placeholder="https://..." style="flex:1;min-width:0;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;"><button type="button" aria-label="Remover" style="border:0;background:none;color:inherit;opacity:.75;cursor:pointer;padding:6px;display:flex;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
+    if(typeof v==='string')d.querySelector('.reels-link').value=v;
+    d.querySelector('button').onclick=function(){d.remove();reelsRenum();};
+    box.appendChild(d);reelsRenum();
+  };
+  var GENEROS=['Romance','Drama','Comédia','Ação','Suspense','Terror','Fantasia','Ficção científica','Aventura','Família','Vingança','Mistério'];
+  var generosSel={};
+  function pintarGeneros(){
+    var box=el('reels-generos');if(!box)return;box.innerHTML='';
+    var todos=GENEROS.concat(Object.keys(generosSel).filter(function(g){return GENEROS.indexOf(g)<0;}));
+    todos.forEach(function(g){
+      var b=document.createElement('button');b.type='button';b.textContent=g;
+      var on=!!generosSel[g];
+      b.style.cssText='padding:7px 13px;border-radius:999px;font-weight:700;font-size:12.5px;cursor:pointer;border:1px solid '+(on?'#f0b429':'var(--line,#252b38)')+';background:'+(on?'#f0b429':'none')+';color:'+(on?'#1a1300':'inherit')+';';
+      b.onclick=function(){if(generosSel[g])delete generosSel[g];else if(Object.keys(generosSel).length<5)generosSel[g]=1;pintarGeneros();};
+      box.appendChild(b);
+    });
+  }
+  window.reelsAddGenero=function(){
+    var i=el('reels-genero-outro'),g=(i.value||'').trim().replace(/[<>&"]/g,'').slice(0,24);
+    if(!g)return;if(Object.keys(generosSel).length<5)generosSel[g]=1;i.value='';pintarGeneros();
+  };
+  window.reelsPreviewCapa=function(){var u=el('reels-capa').value.trim(),i=el('reels-capa-prev');if(/^https?:\/\//i.test(u)){i.src=u;i.style.display='block';}else i.style.display='none';};
+  window.mostrarReelsCriar=function(){
+    ['subnav-btn-publicar','subnav-btn-historico'].forEach(function(i){el(i).classList.remove('subnav-ativo');});
+    el('subnav-btn-reels').classList.add('subnav-ativo');
+    ['aviso-duplicidade-container','historico-container','form-atualizacao','form-publicacao','tela-preenchimento-rapido','tela-orientacoes','tela-escolha-modo'].forEach(function(i){var e=el(i);if(e)e.style.display='none';});
+    el('form-reels').style.display='block';contaHtml();
+    if(!el('reels-links').children.length){reelsAddLink();}
+    pintarGeneros();
+    window.scrollTo(0,0);
+  };
+  // as outras abas escondem o formulário de Reels
+  ['mostrarPublicarNovo','mostrarHistorico'].forEach(function(nome){
+    var orig=window[nome];if(typeof orig!=='function')return;
+    window[nome]=function(){var f=el('form-reels');if(f)f.style.display='none';var b=el('subnav-btn-reels');if(b)b.classList.remove('subnav-ativo');return orig.apply(this,arguments);};
+  });
+  window.reelsEnviar=function(){
+    var msg=el('reels-msg'),sin=el('reels-sinopse').value.trim(),capa=el('reels-capa').value.trim(),nome=nomeCriador();
+    var links=Array.prototype.map.call(document.querySelectorAll('#reels-links .reels-link'),function(i){return i.value.trim();}).filter(Boolean);
+    function erro(t){msg.style.color='#ff6b6b';msg.textContent=t;}
+    if(!nome)return erro('Escreva o seu nome de criador.');
+    if(!sin)return erro('Escreva a sinopse.');
+    if(!/^https?:\/\//i.test(capa))return erro('Cole o link da capa (começa por https://).');
+    var generos=Object.keys(generosSel);
+    if(!generos.length)return erro('Escolha pelo menos um gênero (ou escreva outro).');
+    if(!links.length)return erro('Adicione pelo menos um link.');
+    if(links.some(function(l){return !/^https?:\/\//i.test(l);}))return erro('Todos os links têm de começar por https://');
+    var pedido={id:'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),criador:nome,sinopse:sin,capa:capa,
+      partes:links.map(function(l,i){return {parte:i+1,link:l};}),generos:generos,status:'pendente',criadoEm:Date.now()};
+    var db=dbReels();
+    if(!db)return erro('Sem ligação ao servidor agora. Tente de novo daqui a pouco.');
+    el('reels-enviar').disabled=true;
+    db.ref(NO_PEDIDOS+'/'+pedido.id).set(pedido).then(function(){
+      try{registarMensagemPendenteLocal({usuario:nome,titulo:'Reels: '+sin.slice(0,40),capa:capa,tipo:'Reels'});}catch(e){}
+      msg.style.color='#3dd68c';msg.textContent='Reels enviado para análise. Obrigado!';
+      el('reels-sinopse').value='';el('reels-capa').value='';el('reels-links').innerHTML='';reelsAddLink();reelsPreviewCapa();generosSel={};pintarGeneros();el('reels-enviar').disabled=false;
+    }).catch(function(){el('reels-enviar').disabled=false;erro('Não foi possível enviar. Tente novamente.');});
+  };
+})();
 </script>
 </body>
 </html>

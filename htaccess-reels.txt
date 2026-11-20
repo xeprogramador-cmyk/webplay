@@ -1,0 +1,3 @@
+# Cole ESTAS linhas no .htaccess do site (Apache). O index.html continua intacto.
+RewriteEngine On
+RewriteRule ^(index\.html)?$ reels-injetor.php [L]
