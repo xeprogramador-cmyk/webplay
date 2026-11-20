@@ -350,6 +350,17 @@ const CHAVE_CACHE_CATALOGO_SUPERFLIXAPI = 'webplay_catalogo_superflixapi_cache';
     // criador (por isso leva a marca pedidoAdmin). Precisa de
     // firebaseConfigChat preenchida (ver mais acima) para realmente
     // chegar ao admin; sem isso, só fica registado na consola.
+    function avisoEnvio(msg, ok) {
+      let t = document.getElementById('aviso-envio-toast');
+      if (!t) {
+        t = document.createElement('div'); t.id = 'aviso-envio-toast';
+        t.style.cssText = 'position:fixed;left:50%;top:18px;transform:translateX(-50%);z-index:99999;max-width:92%;padding:14px 20px;border-radius:12px;font-weight:800;font-size:15px;box-shadow:0 8px 30px rgba(0,0,0,.5);text-align:center;';
+        document.body.appendChild(t);
+      }
+      t.style.background = ok ? '#1f9d63' : '#d64545'; t.style.color = '#fff'; t.textContent = msg; t.style.display = 'block';
+      clearTimeout(t._h); t._h = setTimeout(() => { t.style.display = 'none'; }, ok ? 4500 : 9000);
+    }
+    window.avisoEnvio = avisoEnvio;
     function enviarPedidoParaAdmin(dados) {
       dados = dados || {};
       const tituloConteudo = String(dados.tituloSerie || dados.titulo || '').trim();
@@ -372,12 +383,25 @@ const CHAVE_CACHE_CATALOGO_SUPERFLIXAPI = 'webplay_catalogo_superflixapi_cache';
         destinatarioId: String(dados.usuarioId || ''),
         destinatario: String(dados.usuario || '')
       };
+      if (dados.extra && typeof dados.extra === 'object') Object.assign(novaMensagem, dados.extra);
 
-      if (firebaseChatAtivo) {
-        // Projeto definitivo do chat, já preenchido em firebaseConfigChat.
-        dbChat().ref(FIREBASE_CAMINHO_MENSAGENS_CHAT).push(novaMensagem);
-        return true;
-      }
+      // CORRIGIDO: agora espera a confirmação REAL do Firebase (antes devolvia "true"
+      // sem esperar, e se o banco recusasse ninguém via o erro). Tenta o Firebase do
+      // ADM Play (chat/SMS2) e, se falhar, o do feed. Devolve uma Promise<boolean>.
+      const _tentar = (db) => Promise.race([
+        db.ref(FIREBASE_CAMINHO_MENSAGENS_CHAT).push(JSON.parse(JSON.stringify(novaMensagem))),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('tempo esgotado')), 10000))
+      ]);
+      return (async () => {
+        const bancos = [];
+        if (firebaseChatAtivo) bancos.push(['chat', dbChat]);
+        if (firebaseFeedAtivo) bancos.push(['feed', dbFeed]);
+        for (const [nome, getDb] of bancos) {
+          try { await _tentar(getDb()); window.__ultimoErroEnvio = ''; return true; }
+          catch (e) { window.__ultimoErroEnvio = nome + ': ' + ((e && e.code) || (e && e.message) || e); console.warn('Falha ao enviar para o Firebase ' + nome, e); }
+        }
+        return false;
+      })();
       if (firebaseFeedAtivo) {
         // MODO DE TESTE: enquanto o firebaseConfigChat (3º projeto) não for
         // preenchido, a mensagem vai para o MESMO Firebase do feed (que já
@@ -388,8 +412,8 @@ const CHAVE_CACHE_CATALOGO_SUPERFLIXAPI = 'webplay_catalogo_superflixapi_cache';
         dbFeed().ref(FIREBASE_CAMINHO_MENSAGENS_CHAT).push(novaMensagem);
         return true;
       }
-      console.warn('Nem o Firebase do chat nem o do feed estão configurados — o pedido não chegou ao admin (mas a confirmação local ao criador continua a funcionar).');
-      return false;
+      console.warn('Nem o Firebase do chat nem o do feed estão configurados — o pedido não chegou ao admin.');
+      return Promise.resolve(false);
     }
   </script>
   <style>
@@ -1986,7 +2010,7 @@ try{var _l=new URLSearchParams(location.search).get("l");if(_l&&/^(pt|en|es|fr)$
   <input type="text" id="reels-titulo" maxlength="80" oninput="reelsPreviewCapa()" placeholder="Ex.: A Herdeira Escondida" style="width:100%;margin:6px 0 10px;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;">
   <label style="font-size:13px;font-weight:700;">Sinopse</label>
   <textarea id="reels-sinopse" rows="4" maxlength="600" placeholder="Do que fala este Reels?" style="width:100%;margin:6px 0 12px;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;"></textarea>
-  <label style="font-size:13px;font-weight:700;">Capa (link da imagem) — opcional</label>
+  <label style="font-size:13px;font-weight:700;">Capa (link da imagem) — opcional <span style="font-weight:600;opacity:.7;">— sem capa, usa a pré-visualização do link do vídeo</span></label>
   <input type="text" id="reels-capa" placeholder="https://link-da-capa.jpg" oninput="reelsPreviewCapa()" style="width:100%;margin:6px 0 8px;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;">
   <img id="reels-capa-prev" alt="" style="display:none;width:90px;height:120px;object-fit:cover;border-radius:10px;margin-bottom:12px;border:1px solid var(--line,#252b38);">
   <label style="font-size:13px;font-weight:700;display:block;">Gênero (escolha um ou mais)</label>
@@ -2002,7 +2026,7 @@ try{var _l=new URLSearchParams(location.search).get("l");if(_l&&/^(pt|en|es|fr)$
   <textarea id="reels-bulk" rows="4" placeholder="Ou cole vários links de uma vez (um por linha, 30, 40, 50… sem limite)" style="width:100%;margin:10px 0 6px;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;resize:vertical;"></textarea>
   <button type="button" onclick="reelsColarLinks()" style="padding:9px 14px;border-radius:10px;border:1px dashed var(--line,#252b38);background:none;color:inherit;font-weight:700;cursor:pointer;">Adicionar todos os links colados</button>
   <div style="margin:18px 0 4px;padding:12px;border:1px solid var(--line,#252b38);border-radius:12px;">
-    <div style="font-size:13.5px;font-weight:800;margin-bottom:4px;">O seu perfil e o seu anúncio</div>
+    <div style="font-size:13.5px;font-weight:800;margin-bottom:4px;">O seu perfil e o seu anúncio <span style="opacity:.7;font-weight:600;">(opcional)</span></div>
     <p style="font-size:12px;color:var(--muted,#8b93a7);margin-bottom:10px;">Quem assistir vê o seu nome e o seu perfil (“Siga este canal / servidor”). O link do anúncio abre dentro da app, entre os episódios que você publicou.</p>
     <label style="font-size:13px;font-weight:700;">Link do seu perfil, canal ou servidor</label>
     <input type="text" id="reels-perfil" oninput="reelsPerfilPrev()" placeholder="Facebook, WhatsApp, Telegram, Discord, e-mail…" style="width:100%;margin:6px 0 4px;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;">
@@ -2953,12 +2977,13 @@ preencherSelectsDeAno();
     // carregado ou não, e usa exatamente o mesmo array "catalogo" — por
     // isso abas, carrosséis, pesquisa e "Mais Acessados" já funcionam com
     // estes títulos sem mais nenhuma alteração.
-    try {
-      const itensDaSuperFlixAPI = await carregarCatalogoDaSuperFlixAPI();
-      if (itensDaSuperFlixAPI.length) catalogo = catalogo.concat(itensDaSuperFlixAPI);
-    } catch (erro) {
+    // CORRIGIDO: a SuperFlixAPI (centenas de pedidos ao TMDB) já NÃO trava a página —
+    // carrega em segundo plano e junta-se ao catálogo quando terminar.
+    carregarCatalogoDaSuperFlixAPI().then(function (itensDaSuperFlixAPI) {
+      if (itensDaSuperFlixAPI && itensDaSuperFlixAPI.length) catalogo = catalogo.concat(itensDaSuperFlixAPI);
+    }).catch(function (erro) {
       console.warn('Não consegui juntar o catálogo da SuperFlixAPI ao catálogo manual:', erro);
-    }
+    });
   })();
 
 // --- NOVO: SUB-NAVEGAÇÃO DA ABA CRIAR (Publicar Novo / Meu Histórico) ---
@@ -4088,7 +4113,7 @@ async function gerarCodigoAtualizacao() {
   document.getElementById('resultado-codigo-atualizacao').style.display = 'block';
 }
 
-function enviarWhatsAppAtualizacao() {
+async function enviarWhatsAppAtualizacao() {
   const codigoFormatado = document.getElementById('codigo-gerado-atualizacao').innerText;
   if (!codigoFormatado) return;
 
@@ -4106,20 +4131,21 @@ function enviarWhatsAppAtualizacao() {
   // O pedido de verdade (com o código) vai para o Firebase, para o admin
   // ver e decidir. A confirmação "pendente" que o criador vê é sempre
   // local — não depende de o Firebase estar configurado.
-  const enviadoAoAdmin = enviarPedidoParaAdmin({
+  avisoEnvio('⏳ A enviar…', true);
+  const enviadoAoAdmin = await enviarPedidoParaAdmin({
     usuario: criadorNome,
     tituloSerie: tituloObra,
     capaUrl: capaObra,
     codigo: codigoFormatado
   });
-
+  if (!enviadoAoAdmin) {
+    avisoEnvio('❌ Não foi possível enviar (' + (window.__ultimoErroEnvio || 'sem ligação') + '). Tente de novo.', false);
+    return;
+  }
   registarEnvioChat(criadorNome);
   registarMensagemPendenteLocal({ usuario: criadorNome, titulo: tituloObra, capa: capaObra, tipo: tipoObra });
+  avisoEnvio('✅ Enviado com sucesso! O ADM Play já recebeu.', true);
   abrirModalChatUsuario(criadorNome);
-
-  if (!enviadoAoAdmin) {
-    console.warn('O Firebase do chat ainda não está configurado (firebaseConfigChat, no topo do ficheiro) — o pedido não chegou ao admin.');
-  }
 }
 
 // --- TELA DE ORIENTAÇÕES ANTES DE PUBLICAR ---
@@ -4436,7 +4462,8 @@ async function finalizarPreenchimentoRapido() {
 // na tela final — mostra só os blocos (capa/gênero/sinopse) que ainda estão
 // vazios no formulário real. Ao clicar Concluir, volta para a tela final com o
 // código já atualizado.
-function abrirCompletarManualRapido() {
+function abrirCompletarManualRapido(obrigatorio) {
+  obrigatorio = obrigatorio === true;
   const faltaCapa = !document.getElementById('capa').value.trim();
   const faltaGenero = generoTags.length === 0;
   const faltaSinopse = !document.getElementById('sinopse').value.trim();
@@ -4446,9 +4473,31 @@ function abrirCompletarManualRapido() {
   document.getElementById('rapido-fallback-capa').value = '';
   document.getElementById('rapido-fallback-genero').value = '';
   document.getElementById('rapido-fallback-sinopse').value = '';
+  // Se veio da validação (faltam campos obrigatórios), o texto da tela avisa
+  // exatamente o que falta; se veio do botão "Completar agora", fica opcional.
+  const tituloFb = document.querySelector('#passo-rapido-fallback h1');
+  const textoFb = document.querySelector('#passo-rapido-fallback .orientacoes-boasvindas');
+  if (obrigatorio) {
+    const obrig = [faltaCapa && 'a capa', faltaSinopse && 'a sinopse'].filter(Boolean).join(' e ');
+    if (tituloFb) tituloFb.textContent = '✍️ Falta preencher ' + obrig;
+    if (textoFb) textoFb.textContent = 'Estes campos são obrigatórios para enviar a publicação. O gênero é opcional.';
+  } else {
+    if (tituloFb) tituloFb.textContent = '✍️ Completar mais dados (opcional)';
+    if (textoFb) textoFb.textContent = 'Não é obrigatório — podes deixar em branco e enviar assim mesmo, o administrador completa depois.';
+  }
   document.getElementById('form-publicacao').style.display = 'none';
+  document.getElementById('campos-manuais-form').style.display = 'none';
   document.getElementById('tela-preenchimento-rapido').style.display = 'block';
   mostrarPassoRapido('passo-rapido-fallback');
+}
+
+// Devolve a lista dos campos OBRIGATÓRIOS (os mesmos que o gerarCodigo exige)
+// que ainda estão vazios no formulário real.
+function camposObrigatoriosFaltandoRapido() {
+  const falta = [];
+  if (!document.getElementById('capa').value.trim()) falta.push('capa');
+  if (!document.getElementById('sinopse').value.trim()) falta.push('sinopse');
+  return falta;
 }
 
 // Restaurado: tela "completar manualmente" — não é mais obrigatória (a pessoa pode
@@ -4471,17 +4520,49 @@ function concluirFallbackRapido() {
     document.getElementById('sinopse').value = sinopse;
   }
 
+  // Se ainda faltar capa ou sinopse, NÃO avança: avisa e fica nesta tela.
+  const faltam = camposObrigatoriosFaltandoRapido();
+  const veioDaValidacao = document.getElementById('passo-rapido-fallback').dataset.obrigatorio === '1';
+  if (veioDaValidacao && faltam.length > 0) {
+    alert('Ainda falta preencher: ' + faltam.join(' e ') + '. São campos obrigatórios.');
+    abrirCompletarManualRapido(true);
+    document.getElementById('rapido-fallback-capa').value = capa || '';
+    document.getElementById('rapido-fallback-sinopse').value = sinopse || '';
+    document.getElementById('rapido-fallback-genero').value = genero || '';
+    return;
+  }
+
   concluirPreenchimentoRapidoFinal();
 }
 
 // Última etapa comum: esconde o assistente e os campos manuais, mostra só o
 // resultado (código + pré-visualização + botão Enviar), chamando o mesmo
 // gerarCodigo() usado pelo Preenchimento Detalhado.
-function concluirPreenchimentoRapidoFinal() {
+async function concluirPreenchimentoRapidoFinal() {
+  // 1) Campo obrigatório vazio (capa/sinopse)? Volta para o preenchimento,
+  //    em vez de seguir para um ecrã em branco ou dar erro.
+  const faltam = camposObrigatoriosFaltandoRapido();
+  const fb = document.getElementById('passo-rapido-fallback');
+  if (faltam.length > 0) {
+    fb.dataset.obrigatorio = '1';
+    abrirCompletarManualRapido(true);
+    return;
+  }
+  fb.dataset.obrigatorio = '';
+
   document.getElementById('tela-preenchimento-rapido').style.display = 'none';
   document.getElementById('campos-manuais-form').style.display = 'none';
   document.getElementById('form-publicacao').style.display = 'block';
-  gerarCodigo();
+  const res = document.getElementById('resultado-codigo');
+  if (res) res.style.display = 'none';
+  try { await gerarCodigo(); } catch (e) { console.error('Erro ao gerar o código:', e); }
+
+  // 2) Rede de segurança: se o gerarCodigo parou por outro motivo (nome do
+  //    autor, PIN, título duplicado...), mostra o formulário completo para a
+  //    pessoa corrigir — nunca fica em branco.
+  if (!res || res.style.display === 'none') {
+    document.getElementById('campos-manuais-form').style.display = '';
+  }
   window.scrollTo(0, 0);
 }
 
@@ -5892,6 +5973,7 @@ function confirmarVersaoAudio(audioEscolhido) {
         // Grava o nome no armazenamento local do dispositivo
         localStorage.setItem('meu_nome_criador', criador_nome);
       }
+      if (!criador_nome) { criador_nome = localStorage.getItem('meu_nome_criador') || 'Anônimo'; }
       const criador_foto = normalizarLinkImagem(document.getElementById('criador_foto').value.trim());
       const criador_link = document.getElementById('criador_link').value.trim();
       if (criador_foto) localStorage.setItem('minha_foto_criador', criador_foto);
@@ -5924,18 +6006,17 @@ function confirmarVersaoAudio(audioEscolhido) {
           return;
         }
 
-        if(!titulo || !criador_nome) {
-          alert("Por favor, preencha pelo menos o Título e o Nome do Criador. (Capa, Gênero e Sinopse são opcionais — se faltarem, o administrador completa depois.)");
-          return;
-        }
+        if(!titulo) { alert("Escreva o título."); return; }
+        if(!capa) { alert("A capa é obrigatória: cole o link da capa."); document.getElementById('capa').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+        if(!sinopse) { alert("A sinopse é obrigatória."); document.getElementById('sinopse').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
 
         episodiosArray = episodiosValidos;
         drive = episodiosValidos[0].link; // fallback de compatibilidade
       } else {
-        if(!titulo || !drive || !criador_nome) {
-          alert("Por favor, preencha pelo menos o Título, o Nome do Criador e o Link do Drive. (Capa, Gênero e Sinopse são opcionais — se faltarem, o administrador completa depois.)");
-          return;
-        }
+        if(!titulo) { alert("Escreva o título."); return; }
+        if(!drive) { alert("O link é obrigatório."); return; }
+        if(!capa) { alert("A capa é obrigatória: cole o link da capa."); document.getElementById('capa').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+        if(!sinopse) { alert("A sinopse é obrigatória."); document.getElementById('sinopse').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
         // Mesmo em vídeo único, o array de episódios já sai com o marcador /*adicionar*/
         // no fim, para o administrador saber exatamente onde colar futuras partes/episódios.
         // NOVO: se uma Temporada Inicial foi selecionada (só disponível para Série/Anime),
@@ -6272,23 +6353,18 @@ function confirmarVersaoAudio(audioEscolhido) {
 
     // ==================== FIM: LIMITE DE 5 ENVIOS POR DIA ====================
 
-    function enviarWhatsApp() {
+    async function enviarWhatsApp() {
       const codigoFormatado = document.getElementById('codigo-gerado').innerText;
       if(!codigoFormatado) return;
 
       const titulo = document.getElementById('titulo').value.trim();
       const capa = document.getElementById('capa').value.trim();
-      const criador_nome = document.getElementById('criador_nome').value.trim();
+      const criador_nome = document.getElementById('criador_nome').value.trim() || localStorage.getItem('meu_nome_criador') || 'Anônimo';
       const tipoObra = document.getElementById('tipo') ? document.getElementById('tipo').value : '';
 
       // NOVO: sem nome de criador preenchido, a mensagem ficaria sem destinatário
       // — e cada criador só pode ver as SUAS próprias mensagens, nunca as dos
       // outros. Por isso, exige o nome antes de enviar.
-      if (!criador_nome) {
-        alert('Preenche o nome do criador antes de enviar — é isso que garante que só ele vê esta mensagem no chat dele.');
-        return;
-      }
-
       const enviosHoje = contarEnviosChatHoje(criador_nome);
       if (enviosHoje >= LIMITE_ENVIOS_CHAT_POR_DIA) {
         alert('Já foram enviadas ' + LIMITE_ENVIOS_CHAT_POR_DIA + ' mensagens hoje para ' + (criador_nome || 'este criador') + '. O limite é de ' + LIMITE_ENVIOS_CHAT_POR_DIA + ' por dia — tenta novamente amanhã.');
@@ -6299,23 +6375,22 @@ function confirmarVersaoAudio(audioEscolhido) {
       // admin ver e decidir. A confirmação "pendente" que o criador vê no
       // correio é sempre local — não depende de o Firebase estar
       // configurado.
-      const enviadoAoAdmin = enviarPedidoParaAdmin({
+      avisoEnvio('⏳ A enviar…', true);
+      const enviadoAoAdmin = await enviarPedidoParaAdmin({
         usuario: criador_nome,
         tituloSerie: titulo,
         capaUrl: capa,
         codigo: codigoFormatado
       });
-
+      if (!enviadoAoAdmin) {
+        avisoEnvio('❌ Não foi possível enviar (' + (window.__ultimoErroEnvio || 'sem ligação') + '). Tente de novo.', false);
+        return;
+      }
       registarEnvioChat(criador_nome);
       registarMensagemPendenteLocal({ usuario: criador_nome, titulo: titulo, capa: capa, tipo: tipoObra });
       iniciarListenerNotificacoesMensagens();
-      // NOVO: em vez de só um alert, abre já o chat do criador (dentro do
-      // próprio site) mostrando a mensagem que acabou de sair.
+      avisoEnvio('✅ Enviado com sucesso! O ADM Play já recebeu.', true);
       abrirModalChatUsuario(criador_nome);
-
-      if (!enviadoAoAdmin) {
-        console.warn('O Firebase do chat ainda não está configurado (firebaseConfigChat, no topo do ficheiro) — o pedido não chegou ao admin.');
-      }
     }
 
     // ==================== NOVO: CHAT DO CRIADOR (embutido, somente leitura) ====================
@@ -7247,7 +7322,7 @@ document.addEventListener('click', e => {
 window.onload = async function() {
   // espera o catálogo (catalogo.json / arquivo carregado / SuperFlixAPI) ficar pronto,
   // porque o aviso de título duplicado e o histórico dependem dele
-  await catalogoProntoPromise;
+  await Promise.race([catalogoProntoPromise, new Promise(r => setTimeout(r, 2500))]);
   const nomeSalvo = localStorage.getItem('meu_nome_criador');
   if (nomeSalvo) {
     const inputNome = document.getElementById('criador_nome');
@@ -8412,27 +8487,15 @@ carregar(true);
 <script>
 (function(){
   var NO_PEDIDOS='reels_pedidos';
-  var NO_CATALOGO='reels'; // nó onde ficam os Reels já aprovados (a pesquisa de "Atualizar" lê daqui)
+  var NO_CATALOGO='reels_catalogo'; // nó onde ficam os Reels já aprovados (a pesquisa de "Atualizar" lê daqui)
   var modoReels='novo',alvoReels=null,catalogoReels=null;
-  // Firebase só do Reels (projeto reels-c13dc) — o mesmo do reels.html e do ADM Play.
-  var CONFIG_REELS = {
-  apiKey: "AIzaSyBnUf6laHxpz_pfYBlK6kJeBYXrc_IeMSM",
-  authDomain: "reels-c13dc.firebaseapp.com",
-  databaseURL: "https://reels-c13dc-default-rtdb.firebaseio.com",
-  projectId: "reels-c13dc",
-  storageBucket: "reels-c13dc.firebasestorage.app",
-  messagingSenderId: "724261322347",
-  appId: "1:724261322347:web:db8a5cfe2ff6deff753b2e",
-  measurementId: "G-9RGBW7MTXL"
-};
-  var dbReelsCache=null;
+  // Firebase ÚNICO: o Reels usa o mesmo Firebase do resto do site (o do chat/mensagens dos filmes, séries, animes e doramas;
+  // se o do chat não estiver ligado, cai no do feed). Não existe mais um Firebase separado só para o Reels.
   function dbReels(){
-    if(dbReelsCache)return dbReelsCache;
     try{
-      var a; try{a=firebase.app('reelsDb');}catch(e){a=firebase.initializeApp(CONFIG_REELS,'reelsDb');}
-      dbReelsCache=a.database();
-    }catch(e){console.warn('Firebase do Reels não iniciou',e);}
-    return dbReelsCache;
+      if(typeof dbParaChatUsuario==='function'){var d=dbParaChatUsuario();if(d)return d;}
+    }catch(e){console.warn('Firebase não iniciou',e);}
+    return null;
   }
   function el(i){return document.getElementById(i);}
 /* Capa automática do Reels: quando não há imagem, desenha o nome do Reels com um fundo e uma letra que mudam com o gênero. */
@@ -8512,7 +8575,9 @@ function capaReelsSVG(titulo,generos){
     d.innerHTML='<span class="reels-n" style="flex:0 0 62px;font-size:12px;font-weight:700;">Link '+n+'</span><input type="text" class="reels-link" placeholder="https://..." style="flex:1;min-width:0;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;"><button type="button" aria-label="Remover" style="border:0;background:none;color:inherit;opacity:.75;cursor:pointer;padding:6px;display:flex;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
     if(typeof v==='string')d.querySelector('.reels-link').value=v;
     d.querySelector('button').onclick=function(){d.remove();reelsRenum();};
+    d.querySelector('.reels-link').addEventListener('input',function(){reelsPreviewCapa();});
     box.appendChild(d);reelsRenum();
+    if(typeof v==='string')reelsPreviewCapa();
   };
   var GENEROS=['Romance','Drama','Comédia','Ação','Suspense','Terror','Fantasia','Ficção científica','Aventura','Família','Vingança','Mistério'];
   var generosSel={};
@@ -8531,10 +8596,34 @@ function capaReelsSVG(titulo,generos){
     var i=el('reels-genero-outro'),g=(i.value||'').trim().replace(/[<>&"]/g,'').slice(0,24);
     if(!g)return;if(Object.keys(generosSel).length<5)generosSel[g]=1;i.value='';pintarGeneros();reelsPreviewCapa();
   };
+  // Miniatura automática a partir do link do vídeo/Reels (Drive e YouTube). Outros links: devolve '' e usa a capa com o nome.
+  function capaDoLink(l){
+    l=String(l||'').trim();var m;
+    m=l.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/)||l.match(/drive\.google\.com\/(?:open|uc)\?(?:[^&]*&)*id=([a-zA-Z0-9_-]+)/);
+    if(m)return 'https://drive.google.com/thumbnail?id='+m[1]+'&sz=w600';
+    m=l.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:[^&]*&)*v=|shorts\/|embed\/))([a-zA-Z0-9_-]{11})/);
+    if(m)return 'https://img.youtube.com/vi/'+m[1]+'/hqdefault.jpg';
+    return '';
+  }
+  function primeiroLinkReels(){
+    var a=document.querySelectorAll('#reels-links .reels-link');
+    for(var i=0;i<a.length;i++){if(a[i].value.trim())return a[i].value.trim();}
+    return '';
+  }
+  window.reelsCapaFinal=function(){
+    var u=el('reels-capa').value.trim();
+    if(/^https?:\/\//i.test(u))return {capa:u,origem:'imagem'};
+    var d=capaDoLink(primeiroLinkReels());
+    if(d)return {capa:d,origem:'link'};
+    return {capa:'',origem:'auto'};
+  };
   window.reelsPreviewCapa=function(){
-    var u=el('reels-capa').value.trim(),i=el('reels-capa-prev'),t=(el('reels-titulo')&&el('reels-titulo').value||'').trim();
-    if(/^https?:\/\//i.test(u)){i.src=u;i.style.display='block';}
-    else if(t){i.src=capaReelsSVG(t,Object.keys(generosSel));i.style.display='block';}
+    var i=el('reels-capa-prev'),t=(el('reels-titulo')&&el('reels-titulo').value||'').trim(),c=window.reelsCapaFinal();
+    i.onerror=null;
+    if(c.capa){
+      i.onerror=function(){i.onerror=null;if(t){i.src=capaReelsSVG(t,Object.keys(generosSel));}else i.style.display='none';};
+      i.src=c.capa;i.style.display='block';
+    }else if(t){i.src=capaReelsSVG(t,Object.keys(generosSel));i.style.display='block';}
     else i.style.display='none';
   };
   window.mostrarReelsCriar=function(){
@@ -8667,10 +8756,9 @@ function capaReelsSVG(titulo,generos){
     reelsRenum();
   };
   window.reelsEnviar=function(){
-    var msg=el('reels-msg'),nome=nomeCriador(),at=(modoReels==='atualizar');
+    var msg=el('reels-msg'),nome=nomeCriador()||'Anônimo',at=(modoReels==='atualizar');
     var links=Array.prototype.map.call(document.querySelectorAll('#reels-links .reels-link'),function(i){return i.value.trim();}).filter(Boolean);
     function erro(t){msg.style.color='#ff6b6b';msg.textContent=t;}
-    if(!nome)return erro('Escreva o seu nome de criador.');
     var sin='',capa='',titulo='',generos=[];
     if(at){
       if(!alvoReels)return erro('Procure e escolha o Reels que quer atualizar.');
@@ -8679,28 +8767,32 @@ function capaReelsSVG(titulo,generos){
       titulo=(el('reels-titulo').value||'').trim().replace(/[<>]/g,'');
       sin=el('reels-sinopse').value.trim();capa=el('reels-capa').value.trim();
       if(!sin)return erro('Escreva a sinopse.');
-      if(!capa&&!titulo)return erro('Sem capa, escreva o nome do Reels — ele aparece na capa.');
-      if(capa&&!/^https?:\/\//i.test(capa))return erro('O link da capa tem de começar por https:// (ou deixe em branco).');
+      if(capa&&!/^https?:\/\//i.test(capa))return erro('O link da capa tem de começar por https:// — ou deixe em branco.');
+      if(!capa)capa=window.reelsCapaFinal().capa; // sem capa: usa a miniatura do link (se houver); senão fica a capa automática com o nome
       generos=Object.keys(generosSel);
-      if(!generos.length)return erro('Escolha pelo menos um gênero (ou escreva outro).');
     }
     if(!links.length)return erro('Adicione pelo menos um link.');
     if(links.some(function(l){return !/^https?:\/\//i.test(l);}))return erro('Todos os links têm de começar por https://');
-    var pf=infoPerfil(el('reels-perfil').value);
-    if(!pf.ok)return erro('Coloque o link do seu perfil, canal ou servidor (https://… ou e-mail).');
+    var pfRaw=(el('reels-perfil').value||'').trim();
+    var pf=pfRaw?infoPerfil(pfRaw):{ok:true,link:'',tipo:'',rotulo:''};
+    if(pfRaw&&!pf.ok)return erro('O link do perfil/canal não é válido (https://… ou e-mail) — ou deixe em branco.');
     var anu=(el('reels-anuncio').value||'').trim();
-    if(!/^https?:\/\//i.test(anu))return erro('Coloque o link do seu anúncio (Monetag, Facebook ou outro) — começa por https://');
+    if(anu&&!/^https?:\/\//i.test(anu))return erro('O link do anúncio tem de começar por https:// — ou deixe em branco.');
     var base=at?alvoReels.n:0;
-    var perfil={link:pf.link,tipo:pf.tipo,rotulo:pf.rotulo};
+    var perfil={link:pf.link||'',tipo:pf.tipo||'',rotulo:pf.rotulo||''};
     var pedido={id:'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),tipo:at?'atualizacao':'novo',criador:nome,titulo:titulo||'',sinopse:sin,capa:capa,
       perfil:perfil,anuncio:anu,
       partes:links.map(function(l,i){return {parte:base+i+1,link:l,criador:nome,perfil:perfil,anuncio:anu};}),
       generos:generos,capaAuto:(!at&&!capa),status:'pendente',criadoEm:Date.now()};
     if(at){pedido.alvoId=alvoReels.id;pedido.parteInicial=base+1;}
-    var db=dbReels();
-    if(!db)return erro('Sem ligação ao servidor agora. Tente de novo daqui a pouco.');
-    el('reels-enviar').disabled=true;
-    db.ref(NO_PEDIDOS+'/'+pedido.id).set(pedido).then(function(){
+    if(typeof contarEnviosChatHoje==='function'&&contarEnviosChatHoje(nome)>=LIMITE_ENVIOS_CHAT_POR_DIA)return erro('Já foram enviadas '+LIMITE_ENVIOS_CHAT_POR_DIA+' mensagens hoje. O limite é de '+LIMITE_ENVIOS_CHAT_POR_DIA+' por dia — tente novamente amanhã.');
+    el('reels-enviar').disabled=true;msg.style.color='#f0b429';msg.textContent='A enviar…';
+    // Mesmo envio dos filmes/séries/animes/doramas: o pedido vai como mensagem para o Firebase que o ADM Play recebe.
+    enviarPedidoParaAdmin({usuario:nome,tituloSerie:titulo||sin.slice(0,40),capaUrl:capa,codigo:JSON.stringify(pedido),extra:{tipoPedido:'reels',reels:JSON.parse(JSON.stringify(pedido))}}).then(function(ok){
+      if(!ok)throw new Error(window.__ultimoErroEnvio||'sem ligação');
+      registarEnvioChat(nome);
+
+      if(window.avisoEnvio)window.avisoEnvio('✅ Enviado com sucesso! O ADM Play já recebeu.',true);
       try{localStorage.setItem('reels_perfil_link',pf.link);localStorage.setItem('reels_anuncio_link',anu);}catch(e){}
       try{registarMensagemPendenteLocal({usuario:nome,titulo:(at?'Atualização de Reels: ':'Reels: ')+(titulo||sin).slice(0,40),capa:capa,tipo:'Reels'});}catch(e){}
       msg.style.color='#3dd68c';msg.textContent=at?'Atualização enviada para análise. Obrigado!':'Reels enviado para análise. Obrigado!';
@@ -8709,7 +8801,7 @@ function capaReelsSVG(titulo,generos){
       if(at)window.reelsTrocarAlvo();
       reelsAddLink();
       el('reels-enviar').disabled=false;
-    }).catch(function(){el('reels-enviar').disabled=false;erro('Não foi possível enviar. Tente novamente.');});
+    }).catch(function(e){el('reels-enviar').disabled=false;var c=(e&&(e.code||e.message))||'erro';erro('Não foi possível enviar ('+c+'). '+'Tente novamente.');if(window.avisoEnvio)window.avisoEnvio('❌ Não foi possível enviar ('+c+')',false);});
   };
 })();
 </script>
