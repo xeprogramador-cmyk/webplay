@@ -6,6 +6,7 @@
    É injetado pelo functions/_middleware.js (Cloudflare Pages) ou pelo reels-injetor.php.
 ============================================================ */
 (function(){
+  try{if(window.top!==window.self||/reels|criador|admin/i.test(location.pathname))return;}catch(e){return;}
   if(window.__webplayReels) return; window.__webplayReels=true;
   var URL_REELS="reels.html", CH_VISTO="wpr_viu";
   function visto(){try{return localStorage.getItem(CH_VISTO)==="1";}catch(e){return true;}}
@@ -33,7 +34,7 @@
   pega.innerHTML=
    '<div id="wpr-dica">Puxa para cima</div>'+
    '<svg id="wpr-dedo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11V5.5a1.5 1.5 0 013 0V10m0-1.5a1.5 1.5 0 013 0V11m0-1a1.5 1.5 0 013 0v4.5a6.5 6.5 0 01-6.5 6.5h-1A6.5 6.5 0 017 15.5l-2.3-3.7a1.4 1.4 0 012.3-1.6L9 12.5"/></svg>'+
-   '<svg class="arco" viewBox="0 0 130 34"><path id="wpr-morro" d="M-2 35H14C40 35 42 4 65 4C88 4 90 35 116 35H132V36H-2Z" style="fill:var(--wpr-fundo,#0d0f14);stroke:none"/><text x="65" y="28" text-anchor="middle" font-family="system-ui,sans-serif" font-size="17" font-weight="800" fill="currentColor">R</text></svg>';
+   '<svg class="arco" viewBox="0 0 130 34"><path id="wpr-morro" d="M-2 35H24C40 35 46 18 65 18C84 18 90 35 106 35H132V36H-2Z" style="fill:var(--wpr-fundo,#0d0f14);stroke:none"/><text x="65" y="32" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="800" fill="currentColor">R</text></svg>';
   var pano=document.createElement("div");pano.id="wpr-pano";
   document.body.appendChild(pega);document.body.appendChild(pano);
   if(!visto())pega.classList.add("treino");
