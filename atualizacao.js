@@ -7,8 +7,8 @@
    - Tocar em "Atualizar" sem instalar NÃO apaga o aviso. */
 (function(){
   var SESSAO = "webplay_upd_depois";
-  // APK colocado na RAIZ do site (GitHub/Cloudflare). Para outro nome/endereço, põe o campo "apk" no nó "atualizacao".
-  var APK_PADRAO = "app.apk";
+  // APK no último Release do GitHub (o link não muda: basta publicar um release novo com o ficheiro app.apk). Para outro endereço, põe o campo "apk" no nó "atualizacao".
+  var APK_PADRAO = "https://github.com/xeprogramador-cmyk/Webplay-/releases/latest/download/app.apk";
 
   function urlApk(c){
     try { return new URL(c.apk || APK_PADRAO, location.href).href; } catch(e){ return APK_PADRAO; }
