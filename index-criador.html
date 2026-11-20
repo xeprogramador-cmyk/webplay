@@ -8505,13 +8505,25 @@ carregar(true);
   var NO_PEDIDOS='reels_pedidos';
   var NO_CATALOGO='reels_catalogo'; // nó onde ficam os Reels já aprovados (a pesquisa de "Atualizar" lê daqui)
   var modoReels='novo',alvoReels=null,catalogoReels=null;
-  // Firebase ÚNICO: o Reels usa o mesmo Firebase do resto do site (o do chat/mensagens dos filmes, séries, animes e doramas;
-  // se o do chat não estiver ligado, cai no do feed). Não existe mais um Firebase separado só para o Reels.
+  // Firebase só do Reels (projeto reels-c13dc) — o mesmo do reels.html e do ADM Play.
+  var CONFIG_REELS = {
+  apiKey: "AIzaSyBnUf6laHxpz_pfYBlK6kJeBYXrc_IeMSM",
+  authDomain: "reels-c13dc.firebaseapp.com",
+  databaseURL: "https://reels-c13dc-default-rtdb.firebaseio.com",
+  projectId: "reels-c13dc",
+  storageBucket: "reels-c13dc.firebasestorage.app",
+  messagingSenderId: "724261322347",
+  appId: "1:724261322347:web:db8a5cfe2ff6deff753b2e",
+  measurementId: "G-9RGBW7MTXL"
+};
+  var dbReelsCache=null;
   function dbReels(){
+    if(dbReelsCache)return dbReelsCache;
     try{
-      if(typeof dbParaChatUsuario==='function'){var d=dbParaChatUsuario();if(d)return d;}
-    }catch(e){console.warn('Firebase não iniciou',e);}
-    return null;
+      var a; try{a=firebase.app('reelsDb');}catch(e){a=firebase.initializeApp(CONFIG_REELS,'reelsDb');}
+      dbReelsCache=a.database();
+    }catch(e){console.warn('Firebase do Reels não iniciou',e);}
+    return dbReelsCache;
   }
   function el(i){return document.getElementById(i);}
 /* Capa automática do Reels: quando não há imagem, desenha o nome do Reels com um fundo e uma letra que mudam com o gênero. */
@@ -8801,14 +8813,12 @@ function capaReelsSVG(titulo,generos){
       partes:links.map(function(l,i){return {parte:base+i+1,link:l,criador:nome,perfil:perfil,anuncio:anu};}),
       generos:generos,capaAuto:(!at&&!capa),status:'pendente',criadoEm:Date.now()};
     if(at){pedido.alvoId=alvoReels.id;pedido.parteInicial=base+1;}
-    if(typeof contarEnviosChatHoje==='function'&&contarEnviosChatHoje(nome)>=LIMITE_ENVIOS_CHAT_POR_DIA)return erro('Já foram enviadas '+LIMITE_ENVIOS_CHAT_POR_DIA+' mensagens hoje. O limite é de '+LIMITE_ENVIOS_CHAT_POR_DIA+' por dia — tente novamente amanhã.');
+    var db=dbReels();
+    if(!db)return erro('Sem ligação ao servidor agora. Tente de novo daqui a pouco.');
     el('reels-enviar').disabled=true;msg.style.color='#f0b429';msg.textContent='A enviar…';
-    // Mesmo envio dos filmes/séries/animes/doramas: o pedido vai como mensagem para o Firebase que o ADM Play recebe.
-    enviarPedidoParaAdmin({usuario:nome,tituloSerie:titulo||sin.slice(0,40),capaUrl:capa,codigo:JSON.stringify(pedido),extra:{tipoPedido:'reels',reels:JSON.parse(JSON.stringify(pedido))}}).then(function(ok){
-      if(!ok)throw new Error(window.__ultimoErroEnvio||'sem ligação');
-      registarEnvioChat(nome);
-
-      if(window.avisoEnvio)window.avisoEnvio('✅ Enviado com sucesso! O ADM Play já recebeu.',true);
+    // ENVIO ORIGINAL (index-criador antigo): grava em reels_pedidos/<id> no Firebase do Reels (reels-c13dc). Os campos novos viajam dentro do mesmo objeto.
+    db.ref(NO_PEDIDOS+'/'+pedido.id).set(pedido).then(function(){
+      if(window.avisoEnvio)window.avisoEnvio('✅ Enviado com sucesso!',true);
       try{localStorage.setItem('reels_perfil_link',pf.link);localStorage.setItem('reels_anuncio_link',anu);}catch(e){}
       try{registarMensagemPendenteLocal({usuario:nome,titulo:(at?'Atualização de Reels: ':'Reels: ')+(titulo||sin).slice(0,40),capa:capa,tipo:'Reels'});}catch(e){}
       msg.style.color='#3dd68c';msg.textContent=at?'Atualização enviada para análise. Obrigado!':'Reels enviado para análise. Obrigado!';
@@ -8817,7 +8827,7 @@ function capaReelsSVG(titulo,generos){
       if(at)window.reelsTrocarAlvo();
       reelsAddLink();
       el('reels-enviar').disabled=false;
-    }).catch(function(e){el('reels-enviar').disabled=false;var c=(e&&(e.code||e.message))||'erro';erro('Não foi possível enviar ('+c+'). '+'Tente novamente.');if(window.avisoEnvio)window.avisoEnvio('❌ Não foi possível enviar ('+c+')',false);});
+    }).catch(function(){el('reels-enviar').disabled=false;erro('Não foi possível enviar. Tente novamente.');if(window.avisoEnvio)window.avisoEnvio('❌ Não foi possível enviar',false);});
   };
 })();
 </script>
