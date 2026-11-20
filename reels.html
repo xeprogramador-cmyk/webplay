@@ -209,6 +209,23 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .li em{font-style:normal;font-size:11.5px;color:var(--muted)}.li u{text-decoration:none;font-size:11.5px;color:var(--accent);font-weight:700}
 .mas.pag>.g3{display:grid;flex:none}.mas.pag>.fila{display:flex;flex-direction:row}.mas.pag>.sec,.mas.pag>.lr{display:block}.mas.pag>.lr{display:flex}
 .mas.pag .cp .c{aspect-ratio:3/4!important}
+
+/* série (aberta pelo Início): só os episódios dela; elementos da série só no "Para si" */
+#leitor.serie .info,#leitor.serie .escudo span{display:none!important}
+#leitor.serie .lado{display:flex!important;bottom:calc(env(safe-area-inset-bottom,0px) + 90px)}
+.fimc{align-items:center;justify-content:center;text-align:center;background:var(--bg)}
+.fimbox{display:flex;flex-direction:column;gap:10px;align-items:center;padding:24px;width:100%;max-width:320px;margin:auto}
+.fimbox b{font-size:20px}.fimbox p{color:var(--muted);font-size:14px;margin-bottom:6px}
+.fimbox button{padding:11px 20px;border-radius:999px;border:1px solid var(--line);font-weight:800;width:100%}.fimbox button.p{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.pg{margin:10px 0}.pgb{height:5px;border-radius:5px;background:var(--line);overflow:hidden}.pgb i{display:block;height:100%;background:var(--accent)}.pg span{display:block;margin-top:5px;font-size:12px;color:var(--muted);font-weight:700}
+
+.limp{display:block;margin:0 0 6px auto;padding:6px 12px;border-radius:999px;border:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:700}
+.hi{display:flex;align-items:center;gap:6px;margin-bottom:10px}.hb{flex:1;min-width:0;display:flex;gap:12px;align-items:center;text-align:left}
+.hb>i{flex:0 0 56px;height:76px;border-radius:10px;background:var(--panel) center/cover no-repeat;border:1px solid var(--line)}
+.hb .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}.hb b{font-size:14px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hb em{font-style:normal;font-size:11.5px;color:var(--muted)}.hb .pgb{height:4px;border-radius:4px;background:var(--line);overflow:hidden;display:block}.hb .pgb i{display:block;height:100%;background:var(--accent)}
+.hx{flex:0 0 auto;width:34px;height:34px;display:grid;place-items:center;color:var(--muted)}.hx svg{width:18px;height:18px}
+.mas.pag>.hi{display:flex;flex-direction:row;flex:none}
 </style>
 </head>
 <body>
@@ -218,7 +235,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
     <button class="casa" id="defs0" aria-label="Definições dos Reels"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button>
     <button class="casa" id="casa" aria-label="Descer para o início do site"><svg class="i" viewBox="0 0 24 24"><path d="M8 18V6h5a3.5 3.5 0 010 7H8m5 0l4 5"/></svg></button></div>
   <div class="hs tabs" id="tabs"><button data-a="pop" class="on">Popular</button><button data-a="novos">Novo</button><button data-a="class">Classificação</button><button data-a="cat">Categorias</button></div>
-  <div class="hs abas" id="abas" style="display:none"><button data-a="fav" class="on">Favoritos</button><button data-a="cont">A continuar</button></div>
+  <div class="hs abas" id="abas" style="display:none"><button data-a="hist" class="on">Histórico</button><button data-a="fav">Favoritos</button><button data-a="cont">A continuar</button></div>
   <div id="blocoHist"><div class="sec">Em alta · recém-lançados</div><div class="hs fila" id="hist"></div></div>
   <div id="blocoBan"><div class="sec">Os mais assistidos</div><div class="hs ban" id="ban"></div><div class="pts" id="pts"></div></div>
   <div class="hs chips" id="chips"></div>
@@ -232,7 +249,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 </div>
 <button id="abaInicio" aria-label="Página inicial dos Reels"><svg class="i" viewBox="0 0 24 24"><path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z"/></svg><span>Início</span></button>
 <button id="mostrar" aria-label="Mostrar ou ocultar elementos"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
-<div id="aviso"><span>Os Reels abrem direto num vídeo. Podes mudar isto nas definições.</span><button id="avDef">Mudar</button><button class="n" id="avNao">Não avisar</button></div>
+<div id="aviso"><span>O “Para si” abre com vídeos aleatórios. Podes mudar nas definições.</span><button id="avDef">Mudar</button><button class="n" id="avNao">Não avisar</button></div>
 <div id="capaVer"><img id="capaImg" alt="Capa"><span>Toca para fechar</span></div>
 <div id="folha"><div class="f" id="folhaConteudo"></div></div>
 <script>
@@ -270,7 +287,7 @@ function normalizar(r){
   const partes=(r.partes||[]).map((p,i)=>({parte:p.parte||i+1,link:seg(p.link),embed:seg(p.embed)})).filter(p=>p.link);
   let g=r.generos||r.genero||[];if(typeof g==="string")g=g.split(/[,;]/);
   g=(Array.isArray(g)?g:Object.values(g||{})).map(x=>String(x).trim()).filter(Boolean).slice(0,5);
-  return {id:String(r.id||r.sinopse||Math.random()),sinopse:String(r.sinopse||""),capa:(DEMO&&/^data:image\//.test(r.capa||""))?r.capa:seg(r.capa),criador:String(r.criador||""),partes,generos:g,criadoEm:r.criadoEm||0};
+  return {id:String(r.id||r.sinopse||Math.random()),sinopse:String(r.sinopse||""),capa:(DEMO&&/^data:image\//.test(r.capa||""))?r.capa:seg(r.capa),criador:String(r.criador||""),partes,generos:g,criadoEm:r.criadoEm||0,fim:!!(r.fim||r.concluido)};
 }
 function mesclar(l){const m=new Map();l.forEach(r=>{const n=normalizar(r);if(n.partes.length)m.set(n.id,n);});return [...m.values()].sort((a,b)=>(b.criadoEm||0)-(a.criadoEm||0));}
 const tituloDe=r=>{const t=(r.sinopse||"").split(/[.!?\n]/)[0].trim();return t.length>34?t.slice(0,32)+"…":(t||("Reels de "+(r.criador||"Play")));};
@@ -364,30 +381,46 @@ function desenharGeneros(){
 let q="";const semAc=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 function rankHtml(){const t=[...reels].sort((a,b)=>pop(b.id)-pop(a.id)).slice(0,3);if(!t.length)return"";
   return `<div class="rank"><h4>Popular</h4>${t.map((r,i)=>`<button class="rk" data-abrir="${esc(r.id)}"><span class="nr">${i+1}</span><i style="${r.capa?`background-image:url('${esc(r.capa)}')`:""}"></i><span class="tx"><b>${esc(tituloDe(r))}</b><em>${fmt(views(r.id))} visualizações</em></span></button>`).join("")}<button class="mais">Explorar Mais</button></div>`;}
+function agoTxt(t){const m=Math.round((Date.now()-t)/6e4);return m<1?"agora":m<60?`há ${m} min`:m<1440?`há ${Math.round(m/60)} h`:m<2880?"ontem":`há ${Math.round(m/1440)} dias`;}
+function histHtml(base){
+  const rt=retoma(),d0=new Date();d0.setHours(0,0,0,0);const hoje=d0.getTime(),D=864e5,G=[["Hoje",[]],["Ontem",[]],["Esta semana",[]],["Antes",[]]];
+  base.forEach(r=>{const t=(rt[r.id]||{}).t||0;G[t>=hoje?0:t>=hoje-D?1:t>=hoje-7*D?2:3][1].push(r);});
+  const li=r=>{const x=rt[r.id],n=r.partes.length,ate=Math.min(n,x.fim?x.k:x.k+1),pct=Math.round(100*ate/n);
+    return `<div class="hi"><button class="hb" data-abrir="${esc(r.id)}"><i style="${r.capa?`background-image:url('${esc(r.capa)}')`:""}"></i><span class="tx"><b>${esc(tituloDe(r))}</b><em>Parou no EP ${ate} de ${n} · ${agoTxt(x.t)}</em><span class="pgb"><i style="width:${pct}%"></i></span></span></button><button class="hx" data-rm="${esc(r.id)}" aria-label="Remover do histórico"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`;};
+  return base.length?`<button class="limp" data-limpar>Limpar histórico</button>`+G.map(g=>g[1].length?`<div class="sec" style="padding-left:0">${g[0]}</div>`+g[1].map(li).join(""):"").join(""):"";
+}
+document.addEventListener("click",e=>{
+  const x=e.target.closest("[data-rm]");
+  if(x){const r=retoma();delete r[x.dataset.rm];gravarLS(K_RETOMA,r);const t=lerLS("wpr_tempo",{});delete t[x.dataset.rm];gravarLS("wpr_tempo",t);enviarApp();desenharInicio();return;}
+  const c=e.target.closest("[data-limpar]");
+  if(c){if(!c.dataset.ok){c.dataset.ok="1";c.textContent="Toca de novo para limpar tudo";setTimeout(()=>{if(c.isConnected){c.dataset.ok="";c.textContent="Limpar histórico";}},3500);return;}
+    gravarLS(K_RETOMA,{});gravarLS("wpr_tempo",{});enviarApp();desenharInicio();}
+});
 function cartao(r,cur,rt){const prog=aba==="cont"&&rt[r.id]?Math.round(((rt[r.id].k+1)/r.partes.length)*100):0,m=media(r.id);
   return `<button class="cp" data-abrir="${esc(r.id)}"><div class="c" style="${r.capa?`background-image:url('${esc(r.capa)}')`:""}">${cur.includes(r.id)?IC_CORACAO:""}<em>${r.partes.length} ${r.partes.length>1?"partes":"parte"}</em>${m?`<b>${IC_ESTP}${m.toFixed(1)}</b>`:""}</div><div class="n">${esc(tituloDe(r))}</div>${r.generos.length?`<div class="g">${esc(r.generos.join(" · "))}</div>`:""}${prog?`<div class="p"><i style="width:${prog}%"></i></div>`:""}</button>`;}
 function secao(t,its,cur,rt){return its.length?`<div class="sec" style="padding-left:0">${t}</div><div class="g3">${its.map(r=>cartao(r,cur,rt)).join("")}</div>`:"";}
 function desenharInicio(){
-  const L=aba==="fav"||aba==="cont",ok=r=>(!gen||r.generos.some(g=>g.toLowerCase()===gen.toLowerCase()))&&(!q||semAc(tituloDe(r)+" "+r.sinopse+" "+r.criador+" "+r.generos.join(" ")).includes(q));
+  const L=aba==="fav"||aba==="cont"||aba==="hist",ok=r=>(!gen||r.generos.some(g=>g.toLowerCase()===gen.toLowerCase()))&&(!q||semAc(tituloDe(r)+" "+r.sinopse+" "+r.criador+" "+r.generos.join(" ")).includes(q));
   let base=aba==="fav"?curtidos().map(id=>reels.find(r=>r.id===id)).filter(Boolean)
-    :aba==="cont"?Object.entries(retoma()).sort((a,b)=>b[1].t-a[1].t).map(([id])=>reels.find(r=>r.id===id)).filter(Boolean)
+    :aba==="cont"||aba==="hist"?Object.entries(retoma()).sort((a,b)=>b[1].t-a[1].t).map(([id])=>reels.find(r=>r.id===id)).filter(Boolean)
     :aba==="pop"?[...reels].sort((a,b)=>pop(b.id)-pop(a.id))
     :aba==="class"?[...reels].sort((a,b)=>media(b.id)-media(a.id)||pop(b.id)-pop(a.id)):reels;
   base=base.filter(ok);lista=base;
   desenharStories();desenharBanner();desenharGeneros();
-  const home=aba==="pop"&&!q,mas=!!q||L||aba==="pop";
+  const home=aba==="pop"&&!q,mas=(!!q||L||aba==="pop")&&aba!=="hist";
   if(!home)$("blocoHist").style.display=$("blocoBan").style.display="none";
   if(aba!=="cat"||q)$("chips").style.display="none";
   const rt=retoma(),cur=curtidos(),ag=Date.now(),D=864e5;let out="";
-  if(mas){const A=[],B=[];base.forEach((r,i)=>(i%2?B:A).push(cartao(r,cur,rt)));out=`<div>${A.join("")}</div><div>${home?rankHtml():""}${B.join("")}</div>`;}
+  if(aba==="hist")out=histHtml(base);
+  else if(mas){const A=[],B=[];base.forEach((r,i)=>(i%2?B:A).push(cartao(r,cur,rt)));out=`<div>${A.join("")}</div><div>${home?rankHtml():""}${B.join("")}</div>`;}
   else if(aba==="novos")out=secao("Hoje",base.filter(r=>ag-r.criadoEm<D),cur,rt)+secao("Esta semana",base.filter(r=>{const t=ag-r.criadoEm;return t>=D&&t<7*D;}),cur,rt)+secao("Mais antigos",base.filter(r=>ag-r.criadoEm>=7*D),cur,rt);
   else if(aba==="class")out=`<div class="lr">${base.map((r,i)=>{const m=media(r.id);return `<button class="li" data-abrir="${esc(r.id)}"><span class="nr${i<3?" t":""}">${i+1}</span><i style="${r.capa?`background-image:url('${esc(r.capa)}')`:""}"></i><span class="tx"><b>${esc(tituloDe(r))}</b><em>${esc(r.generos.join(" · "))}</em><u>${m?"★ "+m.toFixed(1)+" · ":""}${fmt(views(r.id))} visualizações · ${r.partes.length} partes</u></span></button>`;}).join("")}</div>`;
   else if(aba==="cat"){if(gen)out=secao(esc(gen),base,cur,rt);else{const gs={};base.forEach(r=>r.generos.forEach(g=>{(gs[g]=gs[g]||[]).push(r);}));
     out=Object.keys(gs).sort((a,b)=>gs[b].length-gs[a].length).map(g=>`<div class="sec" style="padding-left:0">${esc(g)} · ${gs[g].length}</div><div class="hs fila" style="margin:0 -16px 6px">${gs[g].slice(0,12).map(r=>cartao(r,cur,rt)).join("")}</div>`).join("");}}
   $("grade").className=mas?"mas":"mas pag";
-  $("grade").innerHTML=base.length?out:`<div class="vazio">${aba==="fav"?"Toca no coração num Reels para ele aparecer aqui.":aba==="cont"?"Vê um Reels e ele aparece aqui para continuares depois.":q||gen?"Nada encontrado.":"Ainda não há Reels publicados."}</div>`;
+  $("grade").innerHTML=base.length?out:`<div class="vazio">${aba==="fav"?"Toca no coração num Reels para ele aparecer aqui.":aba==="hist"?"Ainda não assististe nada. O que vires aparece aqui.":aba==="cont"?"Vê um Reels e ele aparece aqui para continuares depois.":q||gen?"Nada encontrado.":"Ainda não há Reels publicados."}</div>`;
 }
-function irAba(a){aba=a;try{$("inicio").scrollTo(0,0);}catch(x){}const L=a==="fav"||a==="cont";if(a!=="cat")gen="";
+function irAba(a){aba=a;try{$("inicio").scrollTo(0,0);}catch(x){}const L=a==="fav"||a==="cont"||a==="hist";if(a!=="cat")gen="";
   [...$("tabs").children].forEach(x=>x.classList.toggle("on",x.dataset.a===a));[...$("abas").children].forEach(x=>x.classList.toggle("on",x.dataset.a===a));
   $("tabs").style.display=L?"none":"";$("abas").style.display=L?"":"none";desenharInicio();}
 $("tabs").addEventListener("click",e=>{const b=e.target.closest("button");if(b)irAba(b.dataset.a);});
@@ -396,7 +429,7 @@ $("q").addEventListener("input",e=>{q=semAc(e.target.value.trim());desenharInici
 document.addEventListener("click",e=>{if(e.target.closest(".rank .mais")){irAba("pop");$("inicio").scrollTo(0,0);}});
 function navAtivo(n){[...document.querySelectorAll("#nav button")].forEach(b=>b.classList.toggle("on",b.dataset.n===n));}
 $("nav").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const n=b.dataset.n;
-  if(n==="para"){if(!noLeitor)iniciarSugerido();}else{if(noLeitor)fecharLeitor();irAba(n==="lista"?"fav":"pop");$("inicio").scrollTo(0,0);}navAtivo(n);});
+  if(n==="para"){if(noLeitor&&modo==="serie")fecharLeitor(true,true);if(!noLeitor)iniciarSugerido();}else{if(noLeitor)fecharLeitor(false,true);irAba(n==="lista"?"fav":"pop");$("inicio").scrollTo(0,0);}navAtivo(n);});
 $("chips").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;gen=b.dataset.g;desenharInicio();});
 document.addEventListener("click",e=>{
   const h=e.target.closest("[data-hist]");if(h){lista=stories;abrirLeitor(h.dataset.hist);return;}
@@ -406,7 +439,7 @@ document.addEventListener("click",e=>{
 /* ===== voltar à página inicial do site (casa + puxar para baixo) ===== */
 function irParaInicio(){ if(window.parent&&window.parent!==window)parent.postMessage({webplayReels:"fechar"},"*"); else location.href="index.html"; }
 $("casa").onclick=irParaInicio;
-$("casa2").onclick=()=>{fecharLeitor();irParaInicio();};
+$("casa2").onclick=()=>{fecharLeitor(false,true);irParaInicio();};
 (function(){
   const ini=$("inicio");let y0=null,x0=0,dy=0,ativo=false;
   ini.addEventListener("touchstart",e=>{const t=e.touches[0];x0=t.clientX;y0=ini.scrollTop<=0?t.clientY:null;dy=0;ativo=false;},{passive:true});
@@ -464,7 +497,7 @@ const K_CFG="wpr_cfg",K_TEMPO="wpr_tempo";
 let cfg=Object.assign({entrada:"video",direcao:"v",auto:true,aviso:true},lerLS(K_CFG,{}));
 const tempo=()=>lerLS(K_TEMPO,{});
 function marcarFim(id,k){const r=retoma();r[id]={k:k+1,t:Date.now(),fim:true};gravarLS(K_RETOMA,r);enviarApp();}
-setInterval(()=>{if(!noLeitor||!atual||document.hidden||$("folha").classList.contains("on"))return;
+setInterval(()=>{if(!noLeitor||!atual||!atual.dataset.id||document.hidden||$("folha").classList.contains("on"))return;
   const v=atual.querySelector("video");if(v&&v.paused)return;
   const t=tempo(),id=atual.dataset.id;t[id]=(t[id]||0)+5;gravarLS(K_TEMPO,t);},5000);
 
@@ -495,7 +528,7 @@ function juntar(r){
   const f=$("feed");f.insertAdjacentHTML("beforeend",r.partes.map((p,k)=>secHtml(r,k,cur,votos)).join(""));
   for(let i=ini;i<f.children.length;i++)if(obs)obs.observe(f.children[i]);
 }
-function maisFila(){
+function maisFila(){if(modo==="serie")return;
   if(!proxRs.length)proxRs=embaralhar(reels.filter(x=>!fila.length||x!==fila[fila.length-1].r));
   if(proxRs.length)juntar(proxRs.shift());
 }
@@ -506,7 +539,7 @@ function preencherPartes(sec){
   if(box.classList.contains("muitas")){const b=box.querySelector("button.on");if(b)box.scrollTop=Math.max(0,b.getBoundingClientRect().top-box.getBoundingClientRect().top+box.scrollTop-6);}
 }
 function ativar(sec){
-  atual=sec;preencherPartes(sec);
+  atual=sec;if(sec.classList.contains("fimc")){$("leitor").classList.remove("limpo");return;}preencherPartes(sec);
   const r=reels.find(x=>x.id===sec.dataset.id),k=+sec.dataset.k;if(!r)return;
   clearTimeout(tAuto);
   tAuto=setTimeout(()=>{if(atual!==sec||sec.querySelector("iframe,video"))return;tocar(sec.querySelector(".cartao"),r,k);marcarVisto(r.id,k);},300);
@@ -518,7 +551,8 @@ function aoAcabar(card){
   const sec=card.closest(".reel");if(!sec)return;const id=sec.dataset.id,k=+sec.dataset.k;marcarFim(id,k);
   if(!cfg.auto)return;const i=[...$("feed").children].indexOf(sec);if(i>=0)irPara(i+1,true);
 }
-function iniciarFila(r0,k0,seguintes){
+let modo="para",serieAtual=null;
+function iniciarFila(r0,k0,seguintes){modo="para";serieAtual=null;$("leitor").classList.remove("serie");
   if(obs)obs.disconnect();fila=[];proxRs=seguintes.slice();atual=null;
   $("feed").innerHTML="";aplicarDirecao();
   obs=new IntersectionObserver(es=>es.forEach(en=>{if(en.intersectionRatio>=.55)ativar(en.target);else limpar(en.target);}),{root:$("feed"),threshold:[0,.55]});
@@ -527,41 +561,52 @@ function iniciarFila(r0,k0,seguintes){
   irPara(Math.max(0,fila.findIndex(x=>x.r===r0&&x.k===k0)));
   try{history.pushState({wprLeitor:1},"");}catch(e){}
 }
-function abrirLeitor(id){
-  const arr=(lista.length&&lista.some(r=>r.id===id))?lista:reels;
-  const r0=reels.find(r=>r.id===id)||arr[0];if(!r0)return;
-  const i=arr.findIndex(r=>r.id===id);
-  const seg=(i>=0?arr.slice(i+1).concat(arr.slice(0,i)):arr.slice()).concat(reels.filter(x=>!arr.includes(x)));
-  const k0=Math.min((retoma()[id]||{}).k||0,r0.partes.length-1);
-  iniciarFila(r0,k0,seg);
+function abrirLeitor(id){const r0=reels.find(r=>r.id===id)||reels[0];if(!r0)return;const rt=retoma()[id];let k0=rt?rt.k:0;if(k0>=r0.partes.length)k0=0;iniciarSerie(r0,k0);}
+function iniciarSerie(r,k0){
+  iniciarFila(r,k0,[]);modo="serie";serieAtual=r;$("leitor").classList.add("serie");navAtivo("inicio");
+  const f=$("feed");f.insertAdjacentHTML("beforeend",`<section class="reel fimc"><div class="fimbox"><b>${r.fim?"Fim":"O episódio terminou por aqui"}</b><p>${r.fim?"Fim do lançamento.":"Espere por mais lançamentos."}</p><button class="p" data-acao="det">Ver detalhes e comentários</button><button data-acao="ini">Voltar ao início</button></div></section>`);
+  if(obs)obs.observe(f.lastElementChild);
+}
+$("feed").addEventListener("click",e=>{const b=e.target.closest(".fimc button");if(!b||!serieAtual)return;const r=serieAtual;fecharLeitor(false,true);if(b.dataset.acao==="det")abrirDetalhe(r);});
+/* detalhes da série (ao sair): progresso, episódios, avaliação e comentários */
+function abrirDetalhe(r){
+  const rt=retoma()[r.id],n=r.partes.length,ate=rt?Math.min(n,rt.fim?rt.k:rt.k+1):0,pct=Math.round(100*ate/n),prox=Math.min(ate,n-1),m=media(r.id),v=views(r.id);
+  const dm=document.createElement("div");dm.innerHTML='<i class="est"></i><i class="vm"></i><i class="vc"></i>';
+  $("folhaConteudo").innerHTML=`<h4>${esc(tituloDe(r))}<button data-fechar aria-label="Fechar"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></h4>
+  <div class="serie"><div class="cv" data-capa="${esc(r.capa)}" style="${r.capa?`background-image:url('${esc(r.capa)}')`:""}"><div class="t"><button class="btn-ver" data-ep="${prox}">${IC_PLAY} ${ate?"Continuar EP "+(prox+1):"Assistir EP 1"}</button></div></div>
+   <div class="pg"><div class="pgb"><i style="width:${pct}%"></i></div><span>${ate?`Assistiu até o EP ${ate} de ${n} · ${pct}%`:`Ainda não começou · ${n} ${n>1?"episódios":"episódio"}`}</span></div>
+   <div class="meta"><span>${fmt(v)} visualizações</span>${m?`<span class="es">${IC_ESTP}${m.toFixed(1)}</span>`:""}<button data-aval style="margin-left:auto;color:var(--accent);font-weight:800">Avaliar</button></div>
+   ${r.generos.length?`<div class="gen">${r.generos.map(g=>`<span>${esc(g)}</span>`).join("")}</div>`:""}${r.criador?`<div class="criador">@${esc(r.criador)}</div>`:""}<p>${esc(r.sinopse)}</p>
+   <h5>Episódios</h5><div class="eps">${r.partes.map((p,i)=>`<button data-ep="${i}" class="${i<ate?"v":""}">${esc(p.parte)}</button>`).join("")}</div>
+   <h5>Comentários</h5>${blocoComs()}</div>`;
+  $("folha").classList.add("on");ligarComs(dm,r);
+  $("folhaConteudo").onclick=e=>{
+    if(e.target.closest("[data-aval]")){abrirEstrelas(dm,r);return;}
+    const b=e.target.closest("[data-ep]");if(b){fecharFolha();iniciarSerie(r,+b.dataset.ep);return;}
+    const cv=e.target.closest(".cv");if(cv&&cv.dataset.capa){$("capaImg").src=cv.dataset.capa;$("capaVer").classList.add("on");}};
 }
 /* ao entrar: se uma série foi vista >= 15 min (ou até ao fim), segue nela; senão, um vídeo ao acaso */
-function escolherInicio(){
-  const rt=retoma(),tp=tempo();
-  const cont=Object.entries(rt).filter(([id,x])=>(tp[id]>=900||x.fim)).sort((a,b)=>b[1].t-a[1].t)
-    .map(([id,x])=>({r:reels.find(r=>r.id===id),k:x.k})).filter(o=>o.r&&o.k<o.r.partes.length);
-  if(cont.length)return cont[0];
-  return {r:reels[Math.floor(Math.random()*reels.length)],k:0};
-}
+function escolherInicio(){return {r:reels[Math.floor(Math.random()*reels.length)],k:0};}
 function iniciarSugerido(){
   const o=escolherInicio();if(!o.r)return;
   iniciarFila(o.r,o.k,embaralhar(reels.filter(x=>x!==o.r)));
   if(cfg.aviso){$("aviso").classList.add("on");clearTimeout(iniciarSugerido.t);iniciarSugerido.t=setTimeout(()=>$("aviso").classList.remove("on"),8000);}
 }
-function fecharLeitor(deHistorico){
-  if(!noLeitor)return;noLeitor=false;atual=null;clearTimeout(tAuto);if(obs)obs.disconnect();
+function fecharLeitor(deHistorico,semDetalhe){
+  if(!noLeitor)return;const rs=modo==="serie"?serieAtual:null;modo="para";serieAtual=null;$("leitor").classList.remove("serie");noLeitor=false;atual=null;clearTimeout(tAuto);if(obs)obs.disconnect();
   fecharFolha();$("aviso").classList.remove("on");$("leitor").classList.remove("on");$("feed").innerHTML="";fila=[];$("leitor").classList.remove("limpo");navAtivo(aba==="fav"||aba==="cont"?"lista":"inicio");desenharInicio();
   if(!deHistorico){try{if(history.state&&history.state.wprLeitor)history.back();}catch(e){}}
+  if(rs&&!semDetalhe)abrirDetalhe(rs);
 }
 addEventListener("popstate",()=>{if(noLeitor)fecharLeitor(true);});
 $("mostrar").onclick=()=>$("leitor").classList.toggle("limpo");
-$("abaInicio").onclick=()=>fecharLeitor();
+$("abaInicio").onclick=()=>fecharLeitor(false,true);
 
 /* ===== definições ===== */
 function abrirDefs(){
   const seg=(k,ops)=>`<div class="seg" data-k="${k}">${ops.map(o=>`<button data-v="${o[0]}" class="${String(cfg[k])===String(o[0])?"on":""}">${o[1]}</button>`).join("")}</div>`;
   $("folhaConteudo").innerHTML=`<h4>Definições dos Reels<button data-fechar aria-label="Fechar"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></h4>
-   <div class="def"><h5>Ao entrar nos Reels</h5>${seg("entrada",[["video","Mostrar um vídeo"],["inicio","Página inicial"]])}</div>
+   <div class="def"><h5>Ao entrar nos Reels</h5>${seg("entrada",[["video","Para si (vídeos aleatórios)"],["inicio","Página inicial"]])}</div>
    <div class="def"><h5>Passar de um vídeo para o outro</h5>${seg("direcao",[["v","Na vertical ↕"],["h","Na horizontal ↔"]])}</div>
    <div class="def"><h5>Passar ao próximo quando acabar</h5>${seg("auto",[["true","Ligado"],["false","Desligado"]])}<small>Funciona com vídeos diretos (mp4/m3u8) e YouTube. No Drive e outros embeds o fim não é detetado: desliza para o próximo.</small></div>
    <div class="def"><h5>Aviso ao entrar</h5>${seg("aviso",[["true","Mostrar"],["false","Não mostrar"]])}</div>`;
