@@ -33,7 +33,7 @@
   pega.innerHTML=
    '<div id="wpr-dica">Puxa para cima</div>'+
    '<svg id="wpr-dedo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11V5.5a1.5 1.5 0 013 0V10m0-1.5a1.5 1.5 0 013 0V11m0-1a1.5 1.5 0 013 0v4.5a6.5 6.5 0 01-6.5 6.5h-1A6.5 6.5 0 017 15.5l-2.3-3.7a1.4 1.4 0 012.3-1.6L9 12.5"/></svg>'+
-   '<svg class="arco" viewBox="0 0 100 30" fill="none"><path d="M6 24 Q28 24 38 12 Q50 -2 62 12 Q72 24 94 24" stroke="currentColor" stroke-width="7" stroke-linecap="round"/><circle cx="6" cy="24" r="5" fill="currentColor"/><circle cx="94" cy="24" r="5" fill="currentColor"/></svg>';
+   '<svg class="arco" viewBox="0 0 100 30" overflow="visible" fill="none"><path d="M6 24 Q28 24 38 12 Q50 -2 62 12 Q72 24 94 24" stroke="currentColor" stroke-width="7" stroke-linecap="round"/><circle cx="6" cy="24" r="5" fill="currentColor"/><circle cx="94" cy="24" r="5" fill="currentColor"/><text x="50" y="22" text-anchor="middle" font-family="system-ui,sans-serif" font-size="15" font-weight="800" fill="currentColor">R</text></svg>';
   var pano=document.createElement("div");pano.id="wpr-pano";
   document.body.appendChild(pega);document.body.appendChild(pano);
   if(!visto())pega.classList.add("treino");
