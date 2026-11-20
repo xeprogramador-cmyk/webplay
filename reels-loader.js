@@ -14,7 +14,7 @@
 
   var css=document.createElement("style");
   css.textContent=
-  "#wpr-pega{position:fixed;left:50%;transform:translateX(-50%);z-index:9998;width:130px;height:40px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;touch-action:none;cursor:pointer;-webkit-tap-highlight-color:transparent;color:var(--muted,#8a8f9c)}"+
+  "#wpr-pega{position:fixed;left:50%;transform:translateX(-50%);z-index:9998;width:180px;height:70px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;touch-action:none;cursor:pointer;-webkit-tap-highlight-color:transparent;color:var(--muted,#8a8f9c)}"+
   "#wpr-pega svg.arco{width:130px;height:34px;display:block;overflow:visible}"+
   "@keyframes wprb{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}"+
   /* demonstração da 1.ª vez */
@@ -69,17 +69,18 @@
   addEventListener("message",function(e){if(e.data&&e.data.webplayReels==="fechar")fechar();});
 
   // puxar para cima: o painel acompanha o dedo
-  var y0=null,mov=false;
-  pega.addEventListener("pointerdown",function(e){y0=e.clientY;mov=false;pega.setPointerCapture(e.pointerId);});
+  var y0=null,x0=0,mov=false;
+  pega.addEventListener("pointerdown",function(e){y0=e.clientY;x0=e.clientX;mov=false;pega.setPointerCapture(e.pointerId);});
   pega.addEventListener("pointermove",function(e){
     if(y0===null)return;var d=y0-e.clientY;
-    if(d>6){mov=true;if(!aberto){pano.classList.add("dentro","arrasta");criarIframe();pano.style.transform="translateY("+Math.max(0,innerHeight-d)+"px)";}}
+    if(d>6&&d>Math.abs(e.clientX-x0)){mov=true;if(!aberto){pano.classList.add("dentro","arrasta");criarIframe();pano.style.transform="translateY("+Math.max(0,innerHeight-d)+"px)";}}
   });
   function fim(e){
     if(y0===null)return;var d=y0-e.clientY;y0=null;pano.classList.remove("arrasta");pano.style.transform="";
-    if(d>70||(!mov&&Math.abs(d)<6)){pano.classList.remove("aberto");aberto=false;abrir();}
+    if((mov&&d>40)||(!mov&&Math.abs(d)<10)){pano.classList.remove("aberto");aberto=false;abrir();}
     else if(!aberto){pano.classList.remove("dentro");if(iframe){iframe.remove();iframe=null;}}
   }
+  pega.addEventListener("touchmove",function(e){e.preventDefault();},{passive:false});
   pega.addEventListener("pointerup",fim);pega.addEventListener("pointercancel",fim);
 
   // link direto (widgets do app): /?reels=ID  → abre esse Reels; /?reels=1 → abre o início dos Reels

@@ -100,6 +100,52 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 #leitor.on ~ .barra{display:flex}
 .barra button{pointer-events:auto;width:40px;height:40px;display:grid;place-items:center;color:var(--ink);filter:drop-shadow(0 1px 3px #000)}
 .barra button svg{width:26px;height:26px}
+
+/* ---------- leitor: direção, aba Início, definições, aviso ---------- */
+#feed.h{display:flex;flex-direction:row;overflow-y:hidden;overflow-x:auto;scroll-snap-type:x mandatory}
+#feed.h .reel{flex:0 0 100%;width:100%}
+.barra .dir{display:flex;gap:2px}
+#abaInicio{position:fixed;left:0;top:50%;transform:translateY(-50%);z-index:41;display:none;flex-direction:column;align-items:center;gap:6px;padding:12px 7px;border-radius:0 14px 14px 0;background:color-mix(in srgb,var(--bg) 72%,transparent);border:1px solid var(--line);border-left:0;color:var(--ink);backdrop-filter:blur(6px)}
+#abaInicio span{writing-mode:vertical-rl;font-size:11px;font-weight:800;letter-spacing:.5px}
+#abaInicio svg{width:20px;height:20px}
+#leitor.on ~ #abaInicio{display:flex}
+.topo #casa{margin-left:0}.topo #defs0{margin-left:auto}
+.topo .casa svg{width:24px;height:24px}
+.def{margin-bottom:16px}.def h5{font-size:11.5px;color:var(--muted);margin-bottom:7px;text-transform:uppercase;letter-spacing:.4px}
+.def .seg{display:flex;gap:8px}.def .seg button{flex:1;padding:11px 6px;border-radius:12px;border:1px solid var(--line);background:var(--panel);font-weight:700;font-size:13px}
+.def .seg button.on{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.def small{display:block;margin-top:6px;color:var(--muted);font-size:11px;line-height:1.3}
+#aviso{position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 58px);z-index:55;display:none;gap:10px;align-items:center;padding:10px 12px;border-radius:14px;background:var(--panel);border:1px solid var(--line);font-size:12.5px;line-height:1.3}
+#aviso.on{display:flex}#aviso span{flex:1}
+#aviso button{font-weight:800;font-size:12px;color:var(--accent);padding:6px 8px;white-space:nowrap}
+#aviso button.n{color:var(--muted)}
+
+.serie{overflow-y:auto;flex:1;min-height:0}
+.serie .cv{width:100%;aspect-ratio:16/10;border-radius:14px;background:var(--panel) center/cover no-repeat;border:1px solid var(--line);position:relative;overflow:hidden}
+.serie .cv:after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 45%,var(--bg))}
+.serie h3{font-size:17px;margin:10px 0 4px}
+.serie .gen{margin:6px 0}
+.serie p{font-size:13px;line-height:1.4;color:var(--ink);opacity:.9;margin:6px 0}
+.serie .eu{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0 8px;padding:10px 12px;border-radius:14px;background:var(--panel);border:1px solid var(--line);font-size:13px;font-weight:700}
+.serie .eu button{padding:8px 14px;border-radius:999px;background:var(--accent);color:var(--bg);font-weight:800;font-size:12.5px;white-space:nowrap}
+.serie .eps{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px;padding-bottom:6px}
+.serie .eps button{padding:9px 0;border-radius:10px;border:1px solid var(--line);background:var(--panel);font-weight:700;font-size:13px;color:var(--muted)}
+.serie .eps button.v{color:var(--ink)}.serie .eps button.on{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.serie h5{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin:12px 0 7px}
+
+#capaVer{position:fixed;inset:0;z-index:80;background:#000e;display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:16px}
+#capaVer.on{display:flex}#capaVer img{max-width:100%;max-height:82%;border-radius:14px;object-fit:contain}
+#capaVer span{color:var(--muted);font-size:12px}
+.serie .cv .t{position:absolute;left:12px;bottom:12px;z-index:1;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.serie .cv .t small{font-size:10.5px;color:var(--ink);opacity:.8}
+.serie .coms{overflow:visible;max-height:none;flex:none}
+
+.chipserie{display:flex;align-items:center;gap:10px;padding:6px 12px 6px 6px;margin-bottom:8px;border-radius:14px;background:color-mix(in srgb,var(--bg) 72%,transparent);border:1px solid var(--line);text-align:left;max-width:100%;backdrop-filter:blur(6px)}
+.chipserie .mini{flex:0 0 auto;width:38px;height:52px;border-radius:8px;background:var(--panel) center/cover no-repeat;border:1px solid var(--line)}
+.chipserie .tx{display:flex;flex-direction:column;min-width:0;gap:1px}
+.chipserie small{font-size:9.5px;font-weight:800;letter-spacing:.6px;color:var(--accent)}
+.chipserie b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chipserie em{font-style:normal;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* folha (comentários / estrelas) */
 #folha{position:fixed;inset:0;z-index:60;display:none;background:#0008}
 #folha.on{display:block}
@@ -122,6 +168,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 <div id="inicio">
   <div class="puxar" id="puxar">Solta para voltar ao início</div>
   <div class="topo"><b>Reels<span> Play</span></b>
+    <button class="casa" id="defs0" aria-label="Definições dos Reels"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button>
     <button class="casa" id="casa" aria-label="Descer para o início do site"><svg class="i" viewBox="0 0 24 24"><path d="M8 18V6h5a3.5 3.5 0 010 7H8m5 0l4 5"/></svg></button></div>
   <div id="blocoHist"><div class="sec">Em alta · recém-lançados</div><div class="hs hist" id="hist"></div></div>
   <div id="blocoBan"><div class="sec">Os mais assistidos</div><div class="hs ban" id="ban"></div><div class="pts" id="pts"></div></div>
@@ -134,8 +181,11 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 <div id="leitor"><div id="feed"></div></div>
 <div class="barra">
   <button id="voltar" aria-label="Voltar"><svg class="i" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
-  <button id="casa2" aria-label="Início do site"><svg class="i" viewBox="0 0 24 24"><path d="M3 11.5L12 4l9 7.5M5.5 10v10h4.5v-6h4v6h4.5V10"/></svg></button>
+  <div class="dir"><button id="defs" aria-label="Definições dos Reels"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button><button id="casa2" aria-label="Início do site"><svg class="i" viewBox="0 0 24 24"><path d="M3 11.5L12 4l9 7.5M5.5 10v10h4.5v-6h4v6h4.5V10"/></svg></button></div>
 </div>
+<button id="abaInicio" aria-label="Página inicial dos Reels"><svg class="i" viewBox="0 0 24 24"><path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z"/></svg><span>Início</span></button>
+<div id="aviso"><span>Os Reels abrem direto num vídeo. Podes mudar isto nas definições.</span><button id="avDef">Mudar</button><button class="n" id="avNao">Não avisar</button></div>
+<div id="capaVer"><img id="capaImg" alt="Capa"><span>Toca para fechar</span></div>
 <div id="folha"><div class="f" id="folhaConteudo"></div></div>
 <script>
 const URL_REELS_JSON="reels.json", NO_CATALOGO="reels_catalogo", NO_STATS="reels_stats", NO_COMS="reels_comentarios";
@@ -164,6 +214,7 @@ const IC_CORACAO=`<svg class="i co" viewBox="0 0 24 24" style="fill:currentColor
 const IC_CUR=`<svg class="i" viewBox="0 0 24 24"><path d="${PATH_CORACAO}"/></svg>`;
 const IC_EST=`<svg class="i" viewBox="0 0 24 24"><path d="${PATH_ESTRELA}"/></svg>`;
 const IC_ESTP=`<svg viewBox="0 0 24 24"><path d="${PATH_ESTRELA}"/></svg>`;
+const IC_SER='<svg class="i" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z"/></svg>';
 const IC_COM='<svg class="i" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>';
 
 /* ===== dados ===== */
@@ -327,19 +378,32 @@ function tocar(card,r,k){
   const p=r.partes[k],e=embedDe(p);
   card.querySelectorAll("iframe,video").forEach(x=>x.remove());const pl=card.querySelector(".play");if(pl)pl.style.display="none";
   avisarApp(r,p,e);contarVisualizacao(r.id);
-  if(e.tipo==="video"){const v=document.createElement("video");v.controls=true;v.autoplay=true;v.playsInline=true;v.setAttribute("playsinline","");card.appendChild(v);
+  if(e.tipo==="video"){const v=document.createElement("video");v.controls=true;v.onended=()=>aoAcabar(card);v.autoplay=true;v.playsInline=true;v.setAttribute("playsinline","");card.appendChild(v);
     if(/\.m3u8/i.test(e.src)&&!v.canPlayType("application/vnd.apple.mpegurl")){const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js";s.onload=()=>{const h=new Hls();h.loadSource(e.src);h.attachMedia(v);};document.head.appendChild(s);}else v.src=e.src;
     v.onerror=()=>{v.remove();const f=document.createElement("iframe");f.src=e.src;f.allow="autoplay; fullscreen; encrypted-media; picture-in-picture";f.allowFullscreen=true;card.appendChild(f);};}
   else{const f=document.createElement("iframe");f.src=e.src;f.allow="autoplay; fullscreen; encrypted-media; picture-in-picture; clipboard-write; web-share";f.allowFullscreen=true;
     f.referrerPolicy=e.yt?"strict-origin-when-cross-origin":"no-referrer";card.appendChild(f);}
 }
-let noLeitor=false,obs=null;
-function abrirLeitor(id){
-  const arr=(lista.length&&lista.some(r=>r.id===id))?lista:reels;
-  const i0=Math.max(0,arr.findIndex(r=>r.id===id));
-  const cur=curtidos(),rt=retoma(),votos=lerLS(K_VOTOS,{});
-  $("feed").innerHTML=arr.map(r=>{const k0=Math.min((rt[r.id]||{}).k||0,r.partes.length-1),m=media(r.id);return `
-  <section class="reel" data-id="${esc(r.id)}">
+/* ===== definições, tempo assistido e fim de episódio ===== */
+const K_CFG="wpr_cfg",K_TEMPO="wpr_tempo";
+let cfg=Object.assign({entrada:"video",direcao:"v",auto:true,aviso:true},lerLS(K_CFG,{}));
+const tempo=()=>lerLS(K_TEMPO,{});
+function marcarFim(id,k){const r=retoma();r[id]={k:k+1,t:Date.now(),fim:true};gravarLS(K_RETOMA,r);enviarApp();}
+setInterval(()=>{if(!noLeitor||!atual||document.hidden||$("folha").classList.contains("on"))return;
+  const v=atual.querySelector("video");if(v&&v.paused)return;
+  const t=tempo(),id=atual.dataset.id;t[id]=(t[id]||0)+5;gravarLS(K_TEMPO,t);},5000);
+
+/* ===== leitor: um episódio por ecrã; os seguintes vêm a seguir ===== */
+let noLeitor=false,obs=null,fila=[],proxRs=[],atual=null,tAuto=null;
+const embaralhar=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const tam=()=>cfg.direcao==="h"?$("feed").clientWidth:$("feed").clientHeight;
+function aplicarDirecao(){$("feed").classList.toggle("h",cfg.direcao==="h");}
+function indiceAtual(){return Math.max(0,Math.round(($("feed")[cfg.direcao==="h"?"scrollLeft":"scrollTop"])/Math.max(1,tam())));}
+function irPara(i,suave){const f=$("feed");if(i<0||i>=f.children.length)return;f.scrollTo({[cfg.direcao==="h"?"left":"top"]:i*tam(),behavior:suave?"smooth":"auto"});}
+function secHtml(r,k,cur,votos){
+  const m=media(r.id),p=r.partes[k];
+  return `
+  <section class="reel" data-id="${esc(r.id)}" data-k="${k}">
     <div class="fundo" style="${r.capa?`background-image:url('${esc(r.capa)}')`:""}"></div>
     <div class="palco"><div class="cartao" style="${r.capa?`background-image:url('${esc(r.capa)}')`:""}"><div class="play"><i></i></div></div></div>
     <div class="lado">
@@ -347,23 +411,125 @@ function abrirLeitor(id){
       <button class="est ${votos[r.id]?"on":""}" aria-label="Estrelas"><i>${IC_EST}</i><span class="vm">${m?m.toFixed(1):"—"}</span></button>
       <button class="com" aria-label="Comentários"><i>${IC_COM}</i><span class="vc">${fmt(+st(r.id).c||0)}</span></button>
     </div>
-    <div class="info">${r.criador?`<div class="criador">@${esc(r.criador)}</div>`:""}${r.generos.length?`<div class="gen">${r.generos.map(g=>`<span>${esc(g)}</span>`).join("")}</div>`:""}<div class="sin">${esc(r.sinopse)}</div>
-      ${r.partes.length>8?`<div class="nparts">${r.partes.length} partes</div>`:""}<div class="partes${r.partes.length>8?" muitas":""}">${r.partes.map((p,k)=>`<button data-k="${k}" class="${k===k0?"on":""}">${r.partes.length>8?esc(p.parte):"Parte "+esc(p.parte)}</button>`).join("")}</div></div>
-  </section>`;}).join("");
+    <div class="info"><button class="ser chipserie" aria-label="Ver a série"><i class="mini" style="${r.capa?`background-image:url('${esc(r.capa)}')`:""}"></i><span class="tx"><small>SÉRIE</small><b>${esc(tituloDe(r))}</b><em>EP ${esc(p.parte)} de ${r.partes.length} · ver capa e comentários ›</em></span></button>${r.criador?`<div class="criador">@${esc(r.criador)}</div>`:""}${r.generos.length?`<div class="gen">${r.generos.map(g=>`<span>${esc(g)}</span>`).join("")}</div>`:""}<div class="sin">${esc(r.sinopse)}</div>
+      <div class="nparts">Parte ${esc(p.parte)} de ${r.partes.length}</div><div class="partes${r.partes.length>8?" muitas":""}"></div></div>
+  </section>`;}
+function juntar(r){
+  const cur=curtidos(),votos=lerLS(K_VOTOS,{}),ini=fila.length;
+  r.partes.forEach((p,k)=>fila.push({r,k}));
+  const f=$("feed");f.insertAdjacentHTML("beforeend",r.partes.map((p,k)=>secHtml(r,k,cur,votos)).join(""));
+  for(let i=ini;i<f.children.length;i++)if(obs)obs.observe(f.children[i]);
+}
+function maisFila(){
+  if(!proxRs.length)proxRs=embaralhar(reels.filter(x=>!fila.length||x!==fila[fila.length-1].r));
+  if(proxRs.length)juntar(proxRs.shift());
+}
+function preencherPartes(sec){
+  if(sec.dataset.pp)return;sec.dataset.pp="1";
+  const r=reels.find(x=>x.id===sec.dataset.id);if(!r)return;const k0=+sec.dataset.k,box=sec.querySelector(".partes");
+  box.innerHTML=r.partes.map((p,k)=>`<button data-k="${k}" class="${k===k0?"on":""}">${r.partes.length>8?esc(p.parte):"Parte "+esc(p.parte)}</button>`).join("");
+  if(box.classList.contains("muitas")){const b=box.querySelector("button.on");if(b)box.scrollTop=Math.max(0,b.getBoundingClientRect().top-box.getBoundingClientRect().top+box.scrollTop-6);}
+}
+function ativar(sec){
+  atual=sec;preencherPartes(sec);
+  const r=reels.find(x=>x.id===sec.dataset.id),k=+sec.dataset.k;if(!r)return;
+  clearTimeout(tAuto);
+  tAuto=setTimeout(()=>{if(atual!==sec||sec.querySelector("iframe,video"))return;tocar(sec.querySelector(".cartao"),r,k);marcarVisto(r.id,k);},300);
+  const i=[...$("feed").children].indexOf(sec);
+  if(i>=fila.length-3){maisFila();}
+}
+function limpar(sec){sec.querySelectorAll("iframe,video").forEach(x=>x.remove());const p=sec.querySelector(".play");if(p)p.style.display="";}
+function aoAcabar(card){
+  const sec=card.closest(".reel");if(!sec)return;const id=sec.dataset.id,k=+sec.dataset.k;marcarFim(id,k);
+  if(!cfg.auto)return;const i=[...$("feed").children].indexOf(sec);if(i>=0)irPara(i+1,true);
+}
+function iniciarFila(r0,k0,seguintes){
+  if(obs)obs.disconnect();fila=[];proxRs=seguintes.slice();atual=null;
+  $("feed").innerHTML="";aplicarDirecao();
+  obs=new IntersectionObserver(es=>es.forEach(en=>{if(en.intersectionRatio>=.55)ativar(en.target);else limpar(en.target);}),{root:$("feed"),threshold:[0,.55]});
+  juntar(r0);for(let n=0;n<2&&proxRs.length;n++)juntar(proxRs.shift());
   $("leitor").classList.add("on");noLeitor=true;
-  requestAnimationFrame(()=>document.querySelectorAll(".partes.muitas").forEach(c=>{const b=c.querySelector("button.on");if(b)c.scrollTop=Math.max(0,b.getBoundingClientRect().top-c.getBoundingClientRect().top+c.scrollTop-6);}));
-  if(obs)obs.disconnect();
-  obs=new IntersectionObserver(es=>es.forEach(en=>{if(!en.isIntersecting){en.target.querySelectorAll("iframe,video").forEach(x=>x.remove());const p=en.target.querySelector(".play");if(p)p.style.display="";}}),{root:$("feed"),threshold:.55});
-  document.querySelectorAll(".reel").forEach(r=>obs.observe(r));
-  $("feed").scrollTop=i0*$("feed").clientHeight;
+  irPara(Math.max(0,fila.findIndex(x=>x.r===r0&&x.k===k0)));
   try{history.pushState({wprLeitor:1},"");}catch(e){}
 }
+function abrirLeitor(id){
+  const arr=(lista.length&&lista.some(r=>r.id===id))?lista:reels;
+  const r0=reels.find(r=>r.id===id)||arr[0];if(!r0)return;
+  const i=arr.findIndex(r=>r.id===id);
+  const seg=(i>=0?arr.slice(i+1).concat(arr.slice(0,i)):arr.slice()).concat(reels.filter(x=>!arr.includes(x)));
+  const k0=Math.min((retoma()[id]||{}).k||0,r0.partes.length-1);
+  iniciarFila(r0,k0,seg);
+}
+/* ao entrar: se uma série foi vista >= 15 min (ou até ao fim), segue nela; senão, um vídeo ao acaso */
+function escolherInicio(){
+  const rt=retoma(),tp=tempo();
+  const cont=Object.entries(rt).filter(([id,x])=>(tp[id]>=900||x.fim)).sort((a,b)=>b[1].t-a[1].t)
+    .map(([id,x])=>({r:reels.find(r=>r.id===id),k:x.k})).filter(o=>o.r&&o.k<o.r.partes.length);
+  if(cont.length)return cont[0];
+  return {r:reels[Math.floor(Math.random()*reels.length)],k:0};
+}
+function iniciarSugerido(){
+  const o=escolherInicio();if(!o.r)return;
+  iniciarFila(o.r,o.k,embaralhar(reels.filter(x=>x!==o.r)));
+  if(cfg.aviso){$("aviso").classList.add("on");clearTimeout(iniciarSugerido.t);iniciarSugerido.t=setTimeout(()=>$("aviso").classList.remove("on"),8000);}
+}
 function fecharLeitor(deHistorico){
-  if(!noLeitor)return;noLeitor=false;fecharFolha();$("leitor").classList.remove("on");$("feed").innerHTML="";desenharInicio();
+  if(!noLeitor)return;noLeitor=false;atual=null;clearTimeout(tAuto);if(obs)obs.disconnect();
+  fecharFolha();$("aviso").classList.remove("on");$("leitor").classList.remove("on");$("feed").innerHTML="";fila=[];desenharInicio();
   if(!deHistorico){try{if(history.state&&history.state.wprLeitor)history.back();}catch(e){}}
 }
 addEventListener("popstate",()=>{if(noLeitor)fecharLeitor(true);});
+$("abaInicio").onclick=()=>fecharLeitor();
+
+/* ===== definições ===== */
+function abrirDefs(){
+  const seg=(k,ops)=>`<div class="seg" data-k="${k}">${ops.map(o=>`<button data-v="${o[0]}" class="${String(cfg[k])===String(o[0])?"on":""}">${o[1]}</button>`).join("")}</div>`;
+  $("folhaConteudo").innerHTML=`<h4>Definições dos Reels<button data-fechar aria-label="Fechar"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></h4>
+   <div class="def"><h5>Ao entrar nos Reels</h5>${seg("entrada",[["video","Mostrar um vídeo"],["inicio","Página inicial"]])}</div>
+   <div class="def"><h5>Passar de um vídeo para o outro</h5>${seg("direcao",[["v","Na vertical ↕"],["h","Na horizontal ↔"]])}</div>
+   <div class="def"><h5>Passar ao próximo quando acabar</h5>${seg("auto",[["true","Ligado"],["false","Desligado"]])}<small>Funciona com vídeos diretos (mp4/m3u8). Em vídeos do YouTube, Drive etc. o fim não é detetado: desliza para o próximo.</small></div>
+   <div class="def"><h5>Aviso ao entrar</h5>${seg("aviso",[["true","Mostrar"],["false","Não mostrar"]])}</div>`;
+  $("folha").classList.add("on");
+}
+$("folhaConteudo").addEventListener("click",e=>{
+  const b=e.target.closest(".def .seg button");if(!b)return;const k=b.parentNode.dataset.k,v=b.dataset.v;
+  const i=noLeitor?indiceAtual():0;
+  cfg[k]=(k==="auto"||k==="aviso")?v==="true":v;gravarLS(K_CFG,cfg);
+  [...b.parentNode.children].forEach(x=>x.classList.toggle("on",x===b));
+  if(k==="direcao"&&noLeitor){aplicarDirecao();$("feed").scrollTo({left:0,top:0});requestAnimationFrame(()=>irPara(i));}
+});
+$("defs").onclick=abrirDefs;$("defs0").onclick=abrirDefs;
+$("avDef").onclick=()=>{$("aviso").classList.remove("on");abrirDefs();};
+$("avNao").onclick=()=>{cfg.aviso=false;gravarLS(K_CFG,cfg);$("aviso").classList.remove("on");};
 $("voltar").onclick=()=>fecharLeitor();
+
+
+/* ===== ver a série: capa, episódio em que estás, lista de episódios ===== */
+function abrirSerie(reel,r){
+  const k=+reel.dataset.k,rt=retoma()[r.id],vistos=rt?rt.k:0,m=media(r.id),v=views(r.id);
+  $("folhaConteudo").innerHTML=`<h4>${esc(tituloDe(r))}<button data-fechar aria-label="Fechar"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></h4>
+  <div class="serie">
+   <div class="cv" data-capa="${esc(r.capa)}" style="${r.capa?`background-image:url('${esc(r.capa)}')`:""}"><div class="t"><button class="btn-ver" data-ep="${k}">${IC_PLAY} Assistir EP ${esc(r.partes[k].parte)}</button><small>Toca na capa para ver a foto</small></div></div>
+   <div class="meta" style="margin-top:10px"><span>${r.partes.length} ${r.partes.length>1?"episódios":"episódio"}</span><span>${fmt(v)} visualizações</span>${m?`<span class="es">${IC_ESTP}${m.toFixed(1)}</span>`:""}<button data-aval style="margin-left:auto;color:var(--accent);font-weight:800">Avaliar</button></div>
+   ${r.generos.length?`<div class="gen">${r.generos.map(g=>`<span>${esc(g)}</span>`).join("")}</div>`:""}
+   ${r.criador?`<div class="criador">@${esc(r.criador)}</div>`:""}
+   <p>${esc(r.sinopse)}</p>
+   <div class="eu"><span>Estás no EP ${esc(r.partes[k].parte)} de ${r.partes.length}</span></div>
+   <h5>Episódios</h5>
+   <div class="eps">${r.partes.map((p,i)=>`<button data-ep="${i}" class="${i===k?"on":i<vistos?"v":""}">${esc(p.parte)}</button>`).join("")}</div>
+   <h5>Comentários</h5>${blocoComs()}
+  </div>`;
+  $("folha").classList.add("on");ligarComs(reel,r);
+  $("folhaConteudo").onclick=e=>{
+    if(e.target.closest("[data-aval]")){abrirEstrelas(reel,r);return;}
+    const b=e.target.closest("[data-ep]");
+    if(b){const kk=+b.dataset.ep,cur=[...$("feed").children].indexOf(reel);let best=-1;
+      fila.forEach((x,i)=>{if(x.r===r&&x.k===kk&&(best<0||Math.abs(i-cur)<Math.abs(best-cur)))best=i;});
+      fecharFolha();if(best>=0)irPara(best,true);return;}
+    const cv=e.target.closest(".cv");if(cv&&cv.dataset.capa){$("capaImg").src=cv.dataset.capa;$("capaVer").classList.add("on");}
+  };
+}
+$("capaVer").onclick=()=>{$("capaVer").classList.remove("on");$("capaImg").removeAttribute("src");};
 
 /* ===== folha: estrelas e comentários ===== */
 let comRef=null;
@@ -382,9 +548,12 @@ function abrirEstrelas(reel,r){
 }
 function abrirComentarios(reel,r){
   $("folhaConteudo").innerHTML=`<h4>Comentários<button data-fechar aria-label="Fechar"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></h4>
-   <div class="coms" id="coms"><div class="vazio" style="padding:20px">A carregar…</div></div>
-   <div class="env"><input id="cNome" maxlength="24" placeholder="O teu nome" value="${esc(lerLS(K_NOME,""))}"><textarea id="cTxt" rows="2" maxlength="300" placeholder="Escreve um comentário…"></textarea><button id="cEnv">Enviar</button></div>`;
-  $("folha").classList.add("on");
+   ${blocoComs()}`;
+  $("folha").classList.add("on");ligarComs(reel,r);
+}
+function blocoComs(){return `<div class="coms" id="coms"><div class="vazio" style="padding:20px">A carregar…</div></div>
+   <div class="env"><input id="cNome" maxlength="24" placeholder="O teu nome" value="${esc(lerLS(K_NOME,""))}"><textarea id="cTxt" rows="2" maxlength="300" placeholder="Escreve um comentário…"></textarea><button id="cEnv">Enviar</button></div>`;}
+function ligarComs(reel,r){
   if(DEMO){
     const ar=demoComs[r.id]=demoComs[r.id]||[{nome:"Ana",texto:"Que final!! Quero a parte 2 já.",em:Date.now()-36e5},{nome:"Rui",texto:"Muito bom, as três partes seguidas.",em:Date.now()-9e6}];
     const pinta=()=>{$("coms").innerHTML=[...ar].sort((a,b)=>b.em-a.em).map(c=>`<div class="com"><b>${esc(c.nome)}</b><small>${new Date(c.em).toLocaleDateString()}</small><p>${esc(c.texto)}</p></div>`).join("");};pinta();
@@ -410,18 +579,25 @@ function abrirComentarios(reel,r){
 $("feed").addEventListener("click",e=>{
   const reel=e.target.closest(".reel");if(!reel)return;const r=reels.find(x=>x.id===reel.dataset.id),card=reel.querySelector(".cartao");if(!r)return;
   const bt=e.target.closest(".partes button");
-  if(bt){reel.querySelectorAll(".partes button").forEach(x=>x.classList.toggle("on",x===bt));tocar(card,r,+bt.dataset.k);marcarVisto(r.id,+bt.dataset.k);return;}
-  if(e.target.closest(".play")){const on=reel.querySelector(".partes button.on"),k=on?+on.dataset.k:0;tocar(card,r,k);marcarVisto(r.id,k);return;}
-  const c=e.target.closest(".cur");if(c){c.classList.toggle("on",alternarCurtir(r.id));return;}
+  if(bt){const k=+bt.dataset.k,cur=[...$("feed").children].indexOf(reel);let best=-1;
+    fila.forEach((x,i)=>{if(x.r===r&&x.k===k&&(best<0||Math.abs(i-cur)<Math.abs(best-cur)))best=i;});
+    if(best>=0)irPara(best,true);return;}
+  if(e.target.closest(".play")){const k=+reel.dataset.k;tocar(card,r,k);marcarVisto(r.id,k);return;}
+  const c=e.target.closest(".cur");if(c){const on=alternarCurtir(r.id);document.querySelectorAll('.reel[data-id="'+CSS.escape(r.id)+'"] .cur').forEach(x=>x.classList.toggle("on",on));return;}
   if(e.target.closest(".est")){abrirEstrelas(reel,r);return;}
   if(e.target.closest(".com")){abrirComentarios(reel,r);return;}
+  if(e.target.closest(".ser")){abrirSerie(reel,r);return;}
   const s=e.target.closest(".sin");if(s)s.classList.toggle("aberta");
 });
 
 /* ===== carregar ===== */
 let doJson=[],doFb=[];
 function atualizar(){reels=mesclar(doFb.concat(doJson));if(!noLeitor)desenharInicio();enviarApp();
-  const m=location.hash.match(/r=([^&]+)/);if(m&&!atualizar.feito&&reels.length){atualizar.feito=true;const id=decodeURIComponent(m[1]);if(reels.some(r=>r.id===id)){lista=reels;abrirLeitor(id);}}}
+  if(atualizar.feito||!reels.length)return;
+  const m=location.hash.match(/r=([^&]+)/);
+  if(m){const id=decodeURIComponent(m[1]);if(reels.some(r=>r.id===id)){atualizar.feito=true;lista=reels;abrirLeitor(id);}}
+  else if(cfg.entrada==="video"){atualizar.feito=true;iniciarSugerido();}
+  else atualizar.feito=true;}
 if(DEMO){doJson=dadosDemo();atualizar();}
 else fetch(URL_REELS_JSON,{cache:"no-store"}).then(r=>r.ok?r.json():[]).catch(()=>[]).then(j=>{doJson=Array.isArray(j)?j:Object.values(j||{});atualizar();});
 if(DB){
