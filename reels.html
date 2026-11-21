@@ -290,6 +290,22 @@ body.imersivo #nav,body.imersivo .barra .dir,body.imersivo #abaInicio,body.imers
 body.imersivo #leitor .lado,body.imersivo #leitor.serie .lado{bottom:calc(env(safe-area-inset-bottom,0px) + 28px)}
 body.imersivo .lado .full{opacity:.28;transition:opacity .2s}
 body.imersivo .lado.mostra .full,body.imersivo .lado .full:active{opacity:1}
+
+/* ===== v7: TODOS os cards com o mesmo tamanho (2 por linha, capa 2:3) em qualquer aba; só o banner e o cartão Popular são grandes ===== */
+.cp .c{aspect-ratio:2/3!important;border-radius:10px;border:0}
+.fila .cp{flex:0 0 44%}
+.g3{grid-template-columns:repeat(2,1fr)}
+.cp .n{font-size:13px;margin-top:7px}
+.cp .g{display:inline-block;max-width:100%;padding:3px 9px;border-radius:6px;background:color-mix(in srgb,var(--ink) 10%,transparent);margin-top:5px}
+@media(min-width:640px){.fila .cp{flex:0 0 30%}.g3{grid-template-columns:repeat(3,1fr)}}
+
+/* ===== v8: tamanho único dos cards = fila da referência (3 por linha, capa 3:4) em TODAS as abas ===== */
+.cp .c{aspect-ratio:3/4!important}
+.fila .cp{flex:0 0 31%}
+.g3{grid-template-columns:repeat(3,1fr);gap:14px 10px}
+.cp .n{font-size:12.5px;line-height:1.25;margin-top:6px}
+.cp .g{display:block;padding:0;background:none;border-radius:0;font-size:10.5px;color:var(--muted);margin-top:2px}
+@media(min-width:640px){.fila .cp{flex:0 0 18%}.g3{grid-template-columns:repeat(5,1fr)}}
 </style>
 </head>
 <body>
@@ -475,12 +491,12 @@ function desenharInicio(){
   if(aba!=="cat"||q)$("chips").style.display="none";
   const rt=retoma(),cur=curtidos(),ag=Date.now(),D=864e5;let out="";
   if(aba==="hist")out=histHtml(base);
-  else if(mas){const A=[],B=[];base.forEach((r,i)=>(i%2?B:A).push(cartao(r,cur,rt)));out=`<div>${A.join("")}</div><div>${home?rankHtml():""}${B.join("")}</div>`;}
+  else if(mas){out=(home?`<div style="margin-bottom:14px">${rankHtml()}</div>`:"")+`<div class="g3">${base.map(r=>cartao(r,cur,rt)).join("")}</div>`;}
   else if(aba==="novos")out=secao("Hoje",base.filter(r=>ag-r.criadoEm<D),cur,rt)+secao("Esta semana",base.filter(r=>{const t=ag-r.criadoEm;return t>=D&&t<7*D;}),cur,rt)+secao("Mais antigos",base.filter(r=>ag-r.criadoEm>=7*D),cur,rt);
   else if(aba==="class")out=`<div class="lr">${base.map((r,i)=>{const m=media(r.id);return `<button class="li" data-abrir="${esc(r.id)}"><span class="nr${i<3?" t":""}">${i+1}</span><i style="${r.capa?`background-image:url('${esc(r.capa)}')`:""}"></i><span class="tx"><b>${esc(tituloDe(r))}</b><em>${esc(r.generos.join(" · "))}</em><u>${m?"★ "+m.toFixed(1)+" · ":""}${fmt(views(r.id))} visualizações · ${r.partes.length} partes</u></span></button>`;}).join("")}</div>`;
   else if(aba==="cat"){if(gen)out=secao(esc(gen),base,cur,rt);else{const gs={};base.forEach(r=>r.generos.forEach(g=>{(gs[g]=gs[g]||[]).push(r);}));
     out=Object.keys(gs).sort((a,b)=>gs[b].length-gs[a].length).map(g=>`<div class="sec" style="padding-left:0">${esc(g)} · ${gs[g].length}</div><div class="hs fila" style="margin:0 -16px 6px">${gs[g].slice(0,12).map(r=>cartao(r,cur,rt)).join("")}</div>`).join("");}}
-  $("grade").className=mas?"mas":"mas pag";
+  $("grade").className="mas pag";
   $("grade").innerHTML=base.length?out:`<div class="vazio">${aba==="fav"?"Toca no coração num Reels para ele aparecer aqui.":aba==="hist"?"Ainda não assististe nada. O que vires aparece aqui.":aba==="cont"?"Vê um Reels e ele aparece aqui para continuares depois.":q||gen?"Nada encontrado.":"Ainda não há Reels publicados."}</div>`;
 }
 function irAba(a){aba=a;try{$("inicio").scrollTo(0,0);}catch(x){}const L=a==="fav"||a==="cont"||a==="hist";if(a!=="cat")gen="";
