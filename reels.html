@@ -194,12 +194,10 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 /* ao reproduzir: só o vídeo (elementos da série somem) */
 .escudoB{display:none;position:absolute;left:0;right:0;bottom:0;z-index:4;height:calc(env(safe-area-inset-bottom,0px) + 70px);background:linear-gradient(transparent,#000 35%)}
 #leitor.limpo ~ #aviso{display:none!important}
-#leitor.limpo .lado,#leitor.limpo .info,#leitor.limpo .escudo span{display:none}
+#leitor.limpo .lado,#leitor.limpo .escudo span{display:none}
 #leitor.limpo .escudoB{display:block}#leitor.limpo .escudo{background:linear-gradient(#000 75%,transparent)}
 #leitor.limpo ~ .barra .dir,#leitor.limpo ~ #nav{display:none}
 #leitor.limpo .prog{bottom:calc(env(safe-area-inset-bottom,0px) + 4px)}
-#mostrar{position:fixed;left:0;top:50%;transform:translateY(-50%);z-index:46;display:none;width:24px;height:64px;border-radius:0 12px 12px 0;background:#0008;border:1px solid var(--line);border-left:0;place-items:center;color:var(--ink)}
-#leitor.on ~ #mostrar{display:grid}#mostrar svg{width:18px;height:18px}
 
 .mas.pag{display:block}.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px 10px;margin-bottom:8px}
 .lr{display:flex;flex-direction:column;gap:12px}.li{display:flex;gap:12px;align-items:center;text-align:left;width:100%}
@@ -248,7 +246,6 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   <div class="dir"><button id="defs" aria-label="Definições dos Reels"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button><button id="casa2" aria-label="Início do site"><svg class="i" viewBox="0 0 24 24"><path d="M3 11.5L12 4l9 7.5M5.5 10v10h4.5v-6h4v6h4.5V10"/></svg></button></div>
 </div>
 <button id="abaInicio" aria-label="Página inicial dos Reels"><svg class="i" viewBox="0 0 24 24"><path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z"/></svg><span>Início</span></button>
-<button id="mostrar" aria-label="Mostrar ou ocultar elementos"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
 <div id="aviso"><span>O “Para si” abre com vídeos aleatórios. Podes mudar nas definições.</span><button id="avDef">Mudar</button><button class="n" id="avNao">Não avisar</button></div>
 <div id="capaVer"><img id="capaImg" alt="Capa"><span>Toca para fechar</span></div>
 <div id="folha"><div class="f" id="folhaConteudo"></div></div>
@@ -478,9 +475,11 @@ function avisarApp(r,p,e){
 }
 function tocar(card,r,k){
   const p=r.partes[k],e=embedDe(p);
+  const ps=posLer(r.id,k);   // segundo onde parou (0 = do início)
+  if(ps){if(e.yt)e.src+=(e.src.indexOf("?")<0?"?":"&")+"start="+ps;else if(/player\.vimeo\.com/i.test(e.src))e.src+="#t="+ps+"s";else if(/dailymotion\.com\/embed/i.test(e.src))e.src+="&start="+ps;}
   card.querySelectorAll("iframe,video").forEach(x=>x.remove());const pl=card.querySelector(".play");if(pl)pl.style.display="none";
   avisarApp(r,p,e);contarVisualizacao(r.id);$("leitor").classList.add("limpo");
-  if(e.tipo==="video"){const v=document.createElement("video");v.controls=true;v.onended=()=>aoAcabar(card);v.autoplay=true;v.playsInline=true;v.setAttribute("playsinline","");card.appendChild(v);
+  if(e.tipo==="video"){const v=document.createElement("video");v.controls=true;v.onended=()=>aoAcabar(card);v.ontimeupdate=()=>posGravar(r.id,k,v.currentTime,v.duration);if(ps)v.addEventListener("loadedmetadata",()=>{try{v.currentTime=ps;}catch(x){}},{once:true});v.autoplay=true;v.playsInline=true;v.setAttribute("playsinline","");card.appendChild(v);
     if(/\.m3u8/i.test(e.src)&&!v.canPlayType("application/vnd.apple.mpegurl")){const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js";s.onload=()=>{const h=new Hls();h.loadSource(e.src);h.attachMedia(v);};document.head.appendChild(s);}else v.src=e.src;
     v.onerror=()=>{v.remove();const f=document.createElement("iframe");f.src=e.src;f.allow="autoplay; fullscreen; encrypted-media; picture-in-picture";f.allowFullscreen=true;card.appendChild(f);};}
   else{const f=document.createElement("iframe");f.src=e.src;f.allow="autoplay; fullscreen; encrypted-media; picture-in-picture; clipboard-write; web-share";f.allowFullscreen=true;
@@ -490,13 +489,23 @@ function tocar(card,r,k){
 function ytOuvir(f){f.addEventListener("load",()=>{let n=0;const t=setInterval(()=>{if(!f.isConnected||++n>600)return clearInterval(t);try{f.contentWindow.postMessage(JSON.stringify({event:"listening",id:1,channel:"widget"}),"*");}catch(x){}},1000);},{once:true});}
 addEventListener("message",e=>{if(typeof e.data!=="string"||!atual)return;let d;try{d=JSON.parse(e.data);}catch(x){return;}
   const f=atual.querySelector("iframe");if(!f||e.source!==f.contentWindow)return;const i=d.info||{};
-  if(i.duration>0&&i.currentTime>=0){const p=atual.querySelector(".prog i");if(p)p.style.width=(100*i.currentTime/i.duration)+"%";}
+  if(i.duration>0&&i.currentTime>=0){posGravar(atual.dataset.id,+atual.dataset.k,i.currentTime,i.duration);const p=atual.querySelector(".prog i");if(p)p.style.width=(100*i.currentTime/i.duration)+"%";}
   if(i.playerState===0)aoAcabar(atual.querySelector(".cartao"));});
 /* ===== definições, tempo assistido e fim de episódio ===== */
 const K_CFG="wpr_cfg",K_TEMPO="wpr_tempo";
+/* continuar onde parou (a ver online): guarda o segundo de cada parte e retoma ao voltar */
+const K_POS="wpr_pos";let posUlt=0;
+function posLer(id,k){const o=lerLS(K_POS,{})[id+"|"+k];return o&&o.s>5?Math.floor(o.s):0;}
+function posApagar(id,k){const m=lerLS(K_POS,{}),c=id+"|"+k;if(m[c]){delete m[c];gravarLS(K_POS,m);}}
+function posGravar(id,k,s,d){if(!id||!(s>=0))return;const ag=Date.now();if(ag-posUlt<4000)return;posUlt=ag;
+  const m=lerLS(K_POS,{}),c=id+"|"+k;
+  if(s>5&&(!(d>0)||s<d-10)){m[c]={s:Math.floor(s),d:Math.floor(d||0),t:ag};
+    const ks=Object.keys(m);if(ks.length>80)ks.sort((a,b)=>(m[a].t||0)-(m[b].t||0)).slice(0,ks.length-80).forEach(x=>delete m[x]);
+    gravarLS(K_POS,m);}
+  else if(m[c]&&d>0&&s>=d-10){delete m[c];gravarLS(K_POS,m);}}
 let cfg=Object.assign({entrada:"video",direcao:"v",auto:true,aviso:true},lerLS(K_CFG,{}));
 const tempo=()=>lerLS(K_TEMPO,{});
-function marcarFim(id,k){const r=retoma();r[id]={k:k+1,t:Date.now(),fim:true};gravarLS(K_RETOMA,r);enviarApp();}
+function marcarFim(id,k){posApagar(id,k);const r=retoma();r[id]={k:k+1,t:Date.now(),fim:true};gravarLS(K_RETOMA,r);enviarApp();}
 setInterval(()=>{if(!noLeitor||!atual||!atual.dataset.id||document.hidden||$("folha").classList.contains("on"))return;
   const v=atual.querySelector("video");if(v&&v.paused)return;
   const t=tempo(),id=atual.dataset.id;t[id]=(t[id]||0)+5;gravarLS(K_TEMPO,t);},5000);
@@ -599,7 +608,7 @@ function fecharLeitor(deHistorico,semDetalhe){
   if(rs&&!semDetalhe)abrirDetalhe(rs);
 }
 addEventListener("popstate",()=>{if(noLeitor)fecharLeitor(true);});
-$("mostrar").onclick=()=>$("leitor").classList.toggle("limpo");
+
 $("abaInicio").onclick=()=>fecharLeitor(false,true);
 
 /* ===== definições ===== */
