@@ -1992,7 +1992,7 @@ try{var _l=new URLSearchParams(location.search).get("l");if(_l&&/^(pt|en|es|fr)$
     </div>
   </div>
   <div id="reels-bloco-lote" style="display:none;margin-bottom:14px;">
-    <label style="font-size:13px;font-weight:700;display:block;">Cole os links das séries / filmes <span style="font-weight:600;opacity:.7;">— um por linha, sem limite</span></label>
+    <label style="font-size:13px;font-weight:700;display:block;">Cole os links das séries / filmes <span style="font-weight:600;opacity:.7;">— sem limite; pode colar seguidos, ele separa sozinho</span></label>
     <textarea id="reels-lote-texto" rows="6" placeholder="https://…&#10;https://…&#10;https://…" style="width:100%;margin:6px 0 8px;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;resize:vertical;"></textarea>
     <button type="button" onclick="reelsLoteAnalisar()" style="width:100%;padding:11px;border-radius:12px;border:0;background:#f0b429;color:#1a1300;font-weight:800;font-size:14px;cursor:pointer;">Analisar links</button>
     <div id="reels-lote-estado" style="font-size:12.5px;opacity:.85;margin:10px 0;min-height:16px;"></div>
@@ -8973,7 +8973,7 @@ function capaReelsSVG(titulo,generos){
   window.reelsLoteAnalisar=function(){
     var t=el('reels-lote-texto'),m=el('reels-lote-msg'),est=el('reels-lote-estado');
     if(ocupado)return;
-    var vals=(t.value.match(/https?:\/\/[^\s,;"'<>]+/g)||[]);
+    var vals=(t.value.match(/https?:\/\/.+?(?=https?:\/\/|[\s,;"'<>]|$)/gi)||[]);
     var ja={};itens.forEach(function(x){ja[x.link]=1;});
     var novos=[];vals.forEach(function(v){if(!ja[v]){ja[v]=1;novos.push(v);}});
     if(!vals.length){m.style.color='#ff9c94';m.textContent='Cole pelo menos um link (https://…), um por linha.';t.focus();return;}
@@ -9038,7 +9038,11 @@ function capaReelsSVG(titulo,generos){
   };
   document.addEventListener('DOMContentLoaded',function(){
     var t=el('reels-lote-texto');
-    if(t)t.addEventListener('paste',function(){setTimeout(function(){window.reelsLoteAnalisar();},60);});
+    if(t){
+      t.addEventListener('paste',function(){setTimeout(function(){window.reelsLoteAnalisar();},60);});
+      t.addEventListener('input',function(e){if(e&&e.inputType==='insertFromPaste')return;if(/\s$/.test(t.value)&&/https?:\/\//i.test(t.value))window.reelsLoteAnalisar();});
+      t.addEventListener('blur',function(){if(/https?:\/\//i.test(t.value))window.reelsLoteAnalisar();});
+    }
     pilula(el('reels-modo-lote'),false);
   });
 })();
