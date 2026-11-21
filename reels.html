@@ -332,6 +332,32 @@ body.imersivo .lado.mostra .full,body.imersivo .lado .full:active{opacity:1}
 .mc .rk{margin-bottom:10px}.mc .rk i{flex:0 0 42px;height:56px}.mc .rk em{color:var(--accent);font-weight:700}
 .g3{grid-template-columns:repeat(2,1fr);gap:14px 10px;padding:0}
 @media(min-width:640px){.mc{max-width:640px;margin:0 auto}.g3{grid-template-columns:repeat(3,1fr)}}
+
+/* ===== v10: sem "Em alta · recém-lançados"; todas as abas (menos o Início) com 3 cards por linha; Classificação numerada ===== */
+#blocoHist{display:none!important}
+.g3c,.mas.pag>.g3c{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 10px;flex:none;margin-bottom:8px}
+@media(min-width:640px){.g3c,.mas.pag>.g3c{max-width:640px;margin-left:auto;margin-right:auto}}
+.g3c .cp .n{font-size:12.5px;line-height:1.25;margin-top:6px}
+.cp .c .num{position:absolute;left:7px;bottom:3px;font-size:46px;font-weight:900;font-style:italic;line-height:1;color:#fff;text-shadow:0 2px 8px #000,0 0 3px #000;pointer-events:none}
+.cp .c .num.t{color:var(--accent)}
+.cp .c:has(.num) b{bottom:6px}
+
+/* ===== v11: tamanhos iguais à referência (margens 14px, espaço entre cards 6px; 3 por linha ≈122px com capa 3:4; 2 por linha ≈186px com capa 1:1,3 dentro de painel escuro) ===== */
+.mas.pag{padding:0 14px}
+.mc,.mas.pag>.mc{gap:6px}.mc>.col{gap:6px}
+.g3c,.mas.pag>.g3c{gap:14px 6px}
+.g3c .cp .n{font-size:14px;font-weight:500;line-height:1.3;margin-top:7px}
+.g3c .cp .g{font-size:12px;margin-top:3px}
+.mas.pag .mc .cp{background:var(--panel);border-radius:8px;overflow:hidden;padding-bottom:10px}
+.mas.pag .mc .cp .c{border-radius:0!important;aspect-ratio:100/130!important}
+.mc .cp .n{padding:0 9px;font-size:14.5px;font-weight:500;line-height:1.3;margin-top:9px}
+.mc .cp .g{margin:7px 9px 0;font-size:12px;border-radius:4px;padding:3px 8px}
+.cp .c em{font-size:12px;padding:2px 8px;border-radius:5px}
+.cp .c b{font-size:11.5px}
+.mc .rank{padding:12px 10px 12px}
+.mc .rank h4{font-size:20px;margin-bottom:12px}
+.mc .rk{gap:8px;margin-bottom:12px}.mc .rk i{flex:0 0 48px;height:64px}.mc .rk b{font-size:13.5px;line-height:1.25}.mc .rk em{font-size:11.5px}
+.mc .rank .mais{padding:11px;border-radius:6px;font-size:14px}
 </style>
 </head>
 <body>
@@ -501,9 +527,10 @@ document.addEventListener("click",e=>{
   if(c){if(!c.dataset.ok){c.dataset.ok="1";c.textContent="Toca de novo para limpar tudo";setTimeout(()=>{if(c.isConnected){c.dataset.ok="";c.textContent="Limpar histórico";}},3500);return;}
     gravarLS(K_RETOMA,{});gravarLS("wpr_tempo",{});enviarApp();desenharInicio();}
 });
-function cartao(r,cur,rt){const prog=aba==="cont"&&rt[r.id]?Math.round(((rt[r.id].k+1)/r.partes.length)*100):0,m=media(r.id);
-  return `<button class="cp" data-abrir="${esc(r.id)}"><div class="c" style="${r.capa?`background-image:url('${esc(r.capa)}')`:""}">${cur.includes(r.id)?IC_CORACAO:""}<em>${r.partes.length} ${r.partes.length>1?"partes":"parte"}</em><b>${IC_PLAY}${fmt(views(r.id))}</b></div><div class="n">${esc(tituloDe(r))}</div>${r.generos.length?`<div class="g">${esc(r.generos.join(" · "))}</div>`:""}${prog?`<div class="p"><i style="width:${prog}%"></i></div>`:""}</button>`;}
-function secao(t,its,cur,rt){return its.length?`<div class="sec" style="padding-left:0">${t}</div>${masonry(its,cur,rt,false)}`:"";}
+function cartao(r,cur,rt,n){const prog=aba==="cont"&&rt[r.id]?Math.round(((rt[r.id].k+1)/r.partes.length)*100):0,m=media(r.id);
+  return `<button class="cp" data-abrir="${esc(r.id)}"><div class="c" style="${r.capa?`background-image:url('${esc(r.capa)}')`:""}">${cur.includes(r.id)?IC_CORACAO:""}<em>${r.partes.length} ${r.partes.length>1?"partes":"parte"}</em><b>${IC_PLAY}${fmt(views(r.id))}</b>${n?`<span class="num${n<=3?" t":""}">${n}</span>`:""}</div><div class="n">${esc(tituloDe(r))}</div>${r.generos.length?`<div class="g">${esc(r.generos.join(" · "))}</div>`:""}${prog?`<div class="p"><i style="width:${prog}%"></i></div>`:""}</button>`;}
+function secao(t,its,cur,rt){return its.length?`<div class="sec" style="padding-left:0">${t}</div>${grade3(its,cur,rt)}`:"";}
+function grade3(its,cur,rt,numerar){return `<div class="g3c">${its.map((r,i)=>cartao(r,cur,rt,numerar?i+1:0)).join("")}</div>`;}
 function masonry(base,cur,rt,comRank){   // 2 colunas como na referência; o cartão "Popular" abre a coluna da direita
   const A=[],B=[];let ha=0,hb=0;
   if(comRank){const rk=rankHtml();if(rk){B.push(rk);hb=1.05;}}
@@ -517,17 +544,17 @@ function desenharInicio(){
     :aba==="pop"?[...reels].sort((a,b)=>pop(b.id)-pop(a.id))
     :aba==="class"?[...reels].sort((a,b)=>media(b.id)-media(a.id)||pop(b.id)-pop(a.id)):reels;
   base=base.filter(ok);lista=base;
-  desenharStories();desenharBanner();desenharGeneros();
+  desenharBanner();desenharGeneros();
   const home=aba==="pop"&&!q,mas=(!!q||L||aba==="pop")&&aba!=="hist";$("inicio").classList.toggle("home",home);
   if(!home)$("blocoHist").style.display=$("blocoBan").style.display="none";
   if(aba!=="cat"||q)$("chips").style.display="none";
   const rt=retoma(),cur=curtidos(),ag=Date.now(),D=864e5;let out="";
   if(aba==="hist")out=histHtml(base);
-  else if(mas){out=masonry(base,cur,rt,home);}
+  else if(mas){out=L?grade3(base,cur,rt):masonry(base,cur,rt,home);}
   else if(aba==="novos")out=secao("Hoje",base.filter(r=>ag-r.criadoEm<D),cur,rt)+secao("Esta semana",base.filter(r=>{const t=ag-r.criadoEm;return t>=D&&t<7*D;}),cur,rt)+secao("Mais antigos",base.filter(r=>ag-r.criadoEm>=7*D),cur,rt);
-  else if(aba==="class")out=masonry(base,cur,rt,false);
+  else if(aba==="class")out=`<div class="sec" style="padding-left:0">Mais bem classificados</div>`+grade3(base,cur,rt,true);
   else if(aba==="cat"){if(gen)out=secao(esc(gen),base,cur,rt);else{const gs={};base.forEach(r=>r.generos.forEach(g=>{(gs[g]=gs[g]||[]).push(r);}));
-    out=Object.keys(gs).sort((a,b)=>gs[b].length-gs[a].length).map(g=>`<div class="sec" style="padding-left:0">${esc(g)} · ${gs[g].length}</div>${masonry(gs[g].slice(0,12),cur,rt,false)}`).join("");}}
+    out=Object.keys(gs).sort((a,b)=>gs[b].length-gs[a].length).map(g=>`<div class="sec" style="padding-left:0">${esc(g)} · ${gs[g].length}</div>${grade3(gs[g].slice(0,12),cur,rt)}`).join("");}}
   $("grade").className="mas pag";
   $("grade").innerHTML=base.length?out:`<div class="vazio">${aba==="fav"?"Toca no coração num Reels para ele aparecer aqui.":aba==="hist"?"Ainda não assististe nada. O que vires aparece aqui.":aba==="cont"?"Vê um Reels e ele aparece aqui para continuares depois.":q||gen?"Nada encontrado.":"Ainda não há Reels publicados."}</div>`;
 }
