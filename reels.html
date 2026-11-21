@@ -476,6 +476,7 @@ function avisarApp(r,p,e){
 function tocar(card,r,k){
   const p=r.partes[k],e=embedDe(p);
   const ps=posLer(r.id,k);   // segundo onde parou (0 = do início)
+  ytDur=0;posAtual=null;if(ps)mostrarContinuar(ps,()=>{posApagar(r.id,k);tocar(card,r,k);});
   if(ps){if(e.yt)e.src+=(e.src.indexOf("?")<0?"?":"&")+"start="+ps;else if(/player\.vimeo\.com/i.test(e.src))e.src+="#t="+ps+"s";else if(/dailymotion\.com\/embed/i.test(e.src))e.src+="&start="+ps;}
   card.querySelectorAll("iframe,video").forEach(x=>x.remove());const pl=card.querySelector(".play");if(pl)pl.style.display="none";
   avisarApp(r,p,e);contarVisualizacao(r.id);$("leitor").classList.add("limpo");
@@ -489,20 +490,28 @@ function tocar(card,r,k){
 function ytOuvir(f){f.addEventListener("load",()=>{let n=0;const t=setInterval(()=>{if(!f.isConnected||++n>600)return clearInterval(t);try{f.contentWindow.postMessage(JSON.stringify({event:"listening",id:1,channel:"widget"}),"*");}catch(x){}},1000);},{once:true});}
 addEventListener("message",e=>{if(typeof e.data!=="string"||!atual)return;let d;try{d=JSON.parse(e.data);}catch(x){return;}
   const f=atual.querySelector("iframe");if(!f||e.source!==f.contentWindow)return;const i=d.info||{};
-  if(i.duration>0&&i.currentTime>=0){posGravar(atual.dataset.id,+atual.dataset.k,i.currentTime,i.duration);const p=atual.querySelector(".prog i");if(p)p.style.width=(100*i.currentTime/i.duration)+"%";}
+  if(i.duration>0)ytDur=i.duration;if(i.currentTime>=0)posGravar(atual.dataset.id,+atual.dataset.k,i.currentTime,ytDur||i.duration);if(i.duration>0&&i.currentTime>=0){const p=atual.querySelector(".prog i");if(p)p.style.width=(100*i.currentTime/i.duration)+"%";}
   if(i.playerState===0)aoAcabar(atual.querySelector(".cartao"));});
 /* ===== definições, tempo assistido e fim de episódio ===== */
 const K_CFG="wpr_cfg",K_TEMPO="wpr_tempo";
 /* continuar onde parou (a ver online): guarda o segundo de cada parte e retoma ao voltar */
-const K_POS="wpr_pos";let posUlt=0;
-function posLer(id,k){const o=lerLS(K_POS,{})[id+"|"+k];return o&&o.s>5?Math.floor(o.s):0;}
-function posApagar(id,k){const m=lerLS(K_POS,{}),c=id+"|"+k;if(m[c]){delete m[c];gravarLS(K_POS,m);}}
-function posGravar(id,k,s,d){if(!id||!(s>=0))return;const ag=Date.now();if(ag-posUlt<4000)return;posUlt=ag;
-  const m=lerLS(K_POS,{}),c=id+"|"+k;
-  if(s>5&&(!(d>0)||s<d-10)){m[c]={s:Math.floor(s),d:Math.floor(d||0),t:ag};
+const K_POS="wpr_pos";let posUlt=0,posAtual=null,ytDur=0;
+function posLer(id,k){const o=lerLS(K_POS,{})[id+"|"+k];return o&&o.s>3?Math.floor(o.s):0;}
+function posApagar(id,k){const m=lerLS(K_POS,{}),c=id+"|"+k;if(m[c]){delete m[c];gravarLS(K_POS,m);}if(posAtual&&posAtual.id===id&&posAtual.k===k)posAtual=null;}
+function posEscrever(id,k,s,d){const ag=Date.now(),m=lerLS(K_POS,{}),c=id+"|"+k;
+  if(s>3&&(!(d>0)||s<d-10)){m[c]={s:Math.floor(s),d:Math.floor(d||0),t:ag};
     const ks=Object.keys(m);if(ks.length>80)ks.sort((a,b)=>(m[a].t||0)-(m[b].t||0)).slice(0,ks.length-80).forEach(x=>delete m[x]);
     gravarLS(K_POS,m);}
   else if(m[c]&&d>0&&s>=d-10){delete m[c];gravarLS(K_POS,m);}}
+/* guarda a cada ~3 s e também ao sair/esconder o ecrã (para não perder os últimos segundos) */
+function posGravar(id,k,s,d){if(!id||!(s>=0))return;posAtual={id,k,s,d};const ag=Date.now();if(ag-posUlt<3000)return;posUlt=ag;posEscrever(id,k,s,d);}
+function posFlush(){if(posAtual)posEscrever(posAtual.id,posAtual.k,posAtual.s,posAtual.d);}
+addEventListener("pagehide",posFlush);document.addEventListener("visibilitychange",()=>{if(document.hidden)posFlush();});
+function mostrarContinuar(seg,doInicio){const m=Math.floor(seg/60),x=String(seg%60).padStart(2,"0"),h=Math.floor(m/60),mm=h?String(m%60).padStart(2,"0"):m;
+  const t=h+":"+mm+":"+x;let el=document.getElementById("wpContinuar");if(el)el.remove();
+  el=document.createElement("div");el.id="wpContinuar";el.style.cssText="position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 60px);z-index:99;display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:14px;background:#000c;border:1px solid var(--line);color:var(--ink);font:600 13px system-ui,sans-serif";
+  el.innerHTML='<span>Continuar de '+(h?t:m+":"+x)+'</span><button style="background:none;border:0;color:var(--ac,#e0a63a);font:700 13px system-ui,sans-serif">Do início</button>';
+  el.querySelector("button").onclick=()=>{el.remove();doInicio();};document.body.appendChild(el);setTimeout(()=>{if(el.isConnected)el.remove();},4500);}
 let cfg=Object.assign({entrada:"video",direcao:"v",auto:true,aviso:true},lerLS(K_CFG,{}));
 const tempo=()=>lerLS(K_TEMPO,{});
 function marcarFim(id,k){posApagar(id,k);const r=retoma();r[id]={k:k+1,t:Date.now(),fim:true};gravarLS(K_RETOMA,r);enviarApp();}
@@ -555,7 +564,7 @@ function ativar(sec){
   const i=[...$("feed").children].indexOf(sec);
   if(i>=fila.length-3){maisFila();}
 }
-function limpar(sec){sec.querySelectorAll("iframe,video").forEach(x=>x.remove());const p=sec.querySelector(".play");if(p)p.style.display="";}
+function limpar(sec){posFlush();sec.querySelectorAll("iframe,video").forEach(x=>x.remove());const p=sec.querySelector(".play");if(p)p.style.display="";}
 function aoAcabar(card){
   const sec=card.closest(".reel");if(!sec)return;const id=sec.dataset.id,k=+sec.dataset.k;marcarFim(id,k);
   if(!cfg.auto)return;const i=[...$("feed").children].indexOf(sec);if(i>=0)irPara(i+1,true);
@@ -726,6 +735,8 @@ function atualizar(){reels=mesclar(doFb.concat(doJson));if(!noLeitor)desenharIni
   if(atualizar.feito||!reels.length)return;
   const m=location.hash.match(/r=([^&]+)/);
   if(m){const id=decodeURIComponent(m[1]);if(reels.some(r=>r.id===id)){atualizar.feito=true;lista=reels;abrirLeitor(id);}}
+  else if(/volta/.test(location.hash)){atualizar.feito=true;const rt=retoma(),ids=Object.keys(rt).filter(id=>reels.some(r=>r.id===id)).sort((a,b)=>(rt[b].t||0)-(rt[a].t||0));
+    if(ids.length){lista=reels;abrirLeitor(ids[0]);}else iniciarSugerido();}
   else if(cfg.entrada==="video"){atualizar.feito=true;iniciarSugerido();}
   else atualizar.feito=true;}
 if(DEMO){doJson=dadosDemo();atualizar();}
