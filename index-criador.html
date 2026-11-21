@@ -2006,7 +2006,6 @@ try{var _l=new URLSearchParams(location.search).get("l");if(_l&&/^(pt|en|es|fr)$
         <button type="button" id="reels-cap-sw" onclick="reelsCapAlternar()" role="switch" aria-checked="false" style="flex:0 0 auto;padding:8px 16px;border-radius:999px;font-weight:800;font-size:13px;cursor:pointer;"></button>
       </div>
       <div id="reels-cap-estado" style="font-size:12.5px;margin:10px 0 0;min-height:16px;"></div>
-      <div id="reels-cap-limites" style="font-size:11.5px;opacity:.75;margin-top:8px;line-height:1.45;"></div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
         <button type="button" id="reels-cap-analisar" onclick="reelsCapAnalisar()" style="display:none;padding:10px 16px;border-radius:10px;border:0;background:#f0b429;color:#1a1300;font-weight:800;font-size:14px;cursor:pointer;"></button>
         <button type="button" onclick="reelsCapColar()" style="padding:9px 14px;border-radius:10px;border:1px dashed var(--line,#252b38);background:none;color:inherit;font-weight:700;font-size:13px;cursor:pointer;">Colar o que copiei agora</button>
@@ -8889,13 +8888,7 @@ function capaReelsSVG(titulo,generos){
 (function(){
   function el(i){return document.getElementById(i);}
   function aux(){return window.__reelsAux||{};}
-  var itens=[],ocupado=false,emLote=false,resumo='',tS=0;
-  var K_LOTE='reels_lote_itens';
-  // guarda a lista no aparelho: o que foi colado/analisado continua lá mesmo que se feche a app
-  function salva(){
-    clearTimeout(tS);
-    tS=setTimeout(function(){try{localStorage.setItem(K_LOTE,JSON.stringify(itens.map(function(x){return {link:x.link,base:x.base||'',dl:x.dl||'',extras:x.extras||[],sinopse:x.sinopse||'',capa:x.capa||'',titulo:x.titulo||'',feito:!!x.feito};})));}catch(e){}},250);
-  }
+  var itens=[],ocupado=false,emLote=false,resumo='';
   var GENERICO=/^(google drive|google drive:.*|youtube|facebook|instagram|tiktok|vimeo|log ?in.*|sign ?in.*|entrar.*|just a moment.*|access denied|attention required.*|403.*|404.*)$/i;
   function bom(t){t=(t||'').trim();return !!t&&!GENERICO.test(t);}
   var RE_TAG=/#[\p{L}\p{N}_]+/gu;
@@ -8933,7 +8926,7 @@ function capaReelsSVG(titulo,generos){
     var p=[];if(it.dl)p.push(it.dl);(it.extras||[]).forEach(function(x){if(p.indexOf(x)<0)p.push(x);});
     it.titulo=((it.base||'').trim()+(p.length?' / '+p.join(' / '):'')).slice(0,150);
     if(it.nomeEl)it.nomeEl.value=it.titulo;
-    pintaChips(it);salva();
+    pintaChips(it);
     if(it.img&&!it.capa&&!(aux().capaLink&&aux().capaLink(it.link)))pintaCapa(it);
   }
   function nomeDoLink(l){
@@ -9026,15 +9019,14 @@ function capaReelsSVG(titulo,generos){
     ['Dublado','Legendado'].forEach(function(n){var b=document.createElement('button');b.type='button';b.textContent=n;b.onclick=function(){it.dl=(it.dl===n)?'':n;montaNome(it);};linha.appendChild(b);it.chips[n]=b;});
     col.appendChild(topo);col.appendChild(nome);col.appendChild(sin);col.appendChild(linha);col.appendChild(lk);
     c.appendChild(img);c.appendChild(col);
-    nome.addEventListener('input',function(){salva();it.titulo=nome.value.trim().replace(/[<>]/g,'');it.base=it.titulo.replace(SUF,'').trim();if(!it.capa&&!(aux().capaLink&&aux().capaLink(it.link)))pintaCapa(it);});
-    sin.addEventListener('input',function(){it.sinopse=sin.value.trim();sin.style.borderColor='';salva();});
+    nome.addEventListener('input',function(){it.titulo=nome.value.trim().replace(/[<>]/g,'');it.base=it.titulo.replace(SUF,'').trim();if(!it.capa&&!(aux().capaLink&&aux().capaLink(it.link)))pintaCapa(it);});
+    sin.addEventListener('input',function(){it.sinopse=sin.value.trim();sin.style.borderColor='';});
     rm.onclick=function(){itens=itens.filter(function(x){return x!==it;});c.remove();contador();};
     it.card=c;it.img=img;it.st=st;it.nomeEl=nome;it.sinEl=sin;it.dl='';it.extras=[];pintaChips(it);
     return c;
   }
   function marca(it,txt,cor){it.st.textContent=txt;it.st.style.color=cor||'';}
   function contador(){
-    salva();
     var n=itens.length,s=el('reels-lote-estado'),b=el('reels-lote-envio');
     if(s&&!ocupado)s.textContent=n?(n+(n===1?' série pronta':' séries prontas')+' — confira e envie.'+(resumo?' ('+resumo+')':'')):(resumo||'');
     if(b)b.style.display=(emLote&&n)?'block':'none';
@@ -9122,23 +9114,6 @@ function capaReelsSVG(titulo,generos){
     var e=el('reels-lote-estado');if(e)e.textContent='';
     contador();
   };
-  function restaura(){
-    var v;try{v=JSON.parse(localStorage.getItem(K_LOTE)||'[]');}catch(e){v=[];}
-    var lista=el('reels-lote-lista');
-    if(!Array.isArray(v)||!v.length||!lista)return;
-    var pend=[];
-    v.forEach(function(d){
-      if(!d||!/^https?:\/\//i.test(d.link))return;
-      var it={link:d.link,titulo:d.titulo||'',sinopse:d.sinopse||'',capa:d.capa||'',base:d.base||'',feito:!!d.feito};
-      itens.push(it);lista.appendChild(criaCard(it));
-      it.dl=d.dl||'';it.extras=Array.isArray(d.extras)?d.extras:[];
-      it.sinEl.value=it.sinopse;it.nomeEl.value=it.titulo;pintaChips(it);pintaCapa(it);
-      if(it.feito)marca(it,'✓ Guardado','#3dd68c');else pend.push(it);
-    });
-    if(pend.length){ocupado=true;pool(pend,3,analisarItem).then(function(){ocupado=false;contador();});}
-    contador();
-  }
-  restaura();
   // modo "Várias séries": acrescenta-se ao seletor sem alterar Novo / Atualizar
   var orig=window.reelsModo;
   function pilula(b,on){if(!b)return;b.style.cssText='flex:1;padding:10px 12px;border-radius:999px;font-weight:700;font-size:13px;cursor:pointer;border:1px solid '+(on?'#f0b429':'var(--line,#252b38)')+';background:'+(on?'#f0b429':'none')+';color:'+(on?'#1a1300':'inherit')+';';}
@@ -9200,9 +9175,6 @@ function capaReelsSVG(titulo,generos){
   var fila=[],on=false,ultimo='',acesso=true,poll=null,aviso='';
   try{fila=JSON.parse(localStorage.getItem(K_FILA)||'[]')||[];on=localStorage.getItem(K_ON)==='1';}catch(e){fila=[];}
   if(!Array.isArray(fila))fila=[];
-  // Modo APP: se a APK tiver a ponte nativa (window.AndroidClip), a página NÃO pede permissão nenhuma ao navegador — usa só o que a app já tem.
-  function app(){return !!(window.AndroidClip&&typeof window.AndroidClip.pegarLinks==='function');}
-  function ponte(nome){try{if(app()&&typeof window.AndroidClip[nome]==='function')window.AndroidClip[nome]();}catch(e){}}
   function guarda(){try{localStorage.setItem(K_FILA,JSON.stringify(fila));localStorage.setItem(K_ON,on?'1':'0');}catch(e){}}
   function extrai(t){return String(t||'').match(RE)||[];}
   // só aceita o que foi copiado se for APENAS link(s): qualquer texto que não seja link é ignorado
@@ -9220,15 +9192,12 @@ function capaReelsSVG(titulo,generos){
     var n=fila.length,b=el('reels-cap-analisar'),lp=el('reels-cap-limpar'),st=el('reels-cap-estado');
     b.style.display=n?'inline-block':'none';b.textContent='Analisar '+n+(n===1?' link':' links');
     lp.style.display='inline-block';
-    var t=n?(n+(n===1?' link guardado':' links guardados')+' desde que ligou.'):(on?(app()?'Ligado — a app guarda os links que você copiar ou compartilhar.':'Ligado — copie os links e volte aqui.'):'');
+    var t=n?(n+(n===1?' link guardado':' links guardados')+' desde que ligou.'):(on?'Ligado — copie os links e volte aqui.':'');
     st.style.color='';st.textContent=aviso||t;
-    var lm=el('reels-cap-limites');
-    if(lm)lm.textContent=app()?'Aplicativo: usa as permissões que a app já tem — não pede nada ao telefone.':'Versão web — limites: só lê o último link copiado e só quando você volta a esta página; o navegador pode pedir permissão para ler o que você copiou; não guarda nada em segundo plano. No aplicativo (APK com a ponte nativa) estes limites não existem.';
   }
   function ler(manual){
-    if(app()){ // aplicativo: só a ponte nativa, sem tocar na API de permissões do navegador
-      var n0=0;try{n0=add(soLinks(window.AndroidClip.pegarLinks()));}catch(e){}
-      aviso=(manual&&!n0)?'Nenhum link novo guardado pela app.':'';pinta();return Promise.resolve(n0);
+    if(window.AndroidClip&&typeof window.AndroidClip.pegarLinks==='function'){
+      try{add(soLinks(window.AndroidClip.pegarLinks()));}catch(e){}
     }
     if(!navigator.clipboard||!navigator.clipboard.readText){
       acesso=false;aviso=manual?'Este navegador não deixa ler o que você copiou — cole os links no campo abaixo.':'';pinta();return Promise.resolve(0);
@@ -9245,16 +9214,14 @@ function capaReelsSVG(titulo,generos){
   function arranca(){
     if(poll)clearInterval(poll);poll=null;
     if(!on)return;
-    poll=setInterval(function(){if(app()||(!document.hidden&&document.hasFocus()&&acesso))ler(false);},2000);
+    poll=setInterval(function(){if(!document.hidden&&document.hasFocus()&&acesso)ler(false);},2000);
   }
   window.reelsCapAlternar=function(){
-    on=!on;guarda();aviso='';ponte(on?'ligar':'desligar');pinta();arranca();
+    on=!on;guarda();aviso='';pinta();arranca();
     if(on)ler(true).then(function(){if(!fila.length){aviso='';pinta();}}); // o clique pede a permissão de leitura
   };
   window.reelsCapColar=function(){ler(true);};
-  // a parte nativa da APK chama isto sempre que apanha um link: webView.evaluateJavascript("reelsCapReceber('…')",null)
-  window.reelsCapReceber=function(texto){var n=add(soLinks(texto));aviso='';pinta();return n;};
-  window.reelsCapLimpar=function(){fila=[];ultimo='';aviso='';ponte('limpar');guarda();if(window.reelsLoteResetar)window.reelsLoteResetar();pinta();}; // apaga tudo o que foi copiado/analisado; pode copiar de novo
+  window.reelsCapLimpar=function(){fila=[];ultimo='';aviso='';guarda();if(window.reelsLoteResetar)window.reelsLoteResetar();pinta();}; // apaga tudo o que foi copiado/analisado; pode copiar de novo
   window.reelsCapAnalisar=function(){
     var t=el('reels-lote-texto');if(!t||!fila.length)return;
     t.value=(t.value?t.value.replace(/\s*$/,'')+'\n':'')+fila.join('\n');
@@ -9262,7 +9229,6 @@ function capaReelsSVG(titulo,generos){
     if(window.reelsLoteAnalisar)window.reelsLoteAnalisar();
   };
   function voltou(){if(on)ler(false);}
-  if(on)ponte('ligar');
   window.addEventListener('focus',voltou);
   document.addEventListener('visibilitychange',function(){if(!document.hidden)voltou();});
   document.addEventListener('DOMContentLoaded',function(){pinta();arranca();voltou();});
