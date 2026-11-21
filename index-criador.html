@@ -1976,6 +1976,7 @@ try{var _l=new URLSearchParams(location.search).get("l");if(_l&&/^(pt|en|es|fr)$
   <div id="reels-modo" style="display:flex;gap:8px;margin-bottom:14px;">
     <button type="button" id="reels-modo-novo" onclick="reelsModo('novo')">Novo Reels</button>
     <button type="button" id="reels-modo-atual" onclick="reelsModo('atualizar')">Atualizar Reels</button>
+    <button type="button" id="reels-modo-lote" onclick="reelsModo('lote')">Várias séries</button>
   </div>
   <div id="reels-atualizar" style="display:none;margin-bottom:14px;">
     <div id="reels-cat-pesquisa">
@@ -1989,6 +1990,13 @@ try{var _l=new URLSearchParams(location.search).get("l");if(_l&&/^(pt|en|es|fr)$
       <div id="reels-alvo-info" style="font-size:12.5px;opacity:.8;margin:4px 0 10px;"></div>
       <button type="button" onclick="reelsTrocarAlvo()" style="padding:8px 14px;border-radius:10px;border:1px dashed var(--line,#252b38);background:none;color:inherit;font-weight:700;cursor:pointer;">Escolher outro Reels</button>
     </div>
+  </div>
+  <div id="reels-bloco-lote" style="display:none;margin-bottom:14px;">
+    <label style="font-size:13px;font-weight:700;display:block;">Cole os links das séries / filmes <span style="font-weight:600;opacity:.7;">— um por linha, sem limite</span></label>
+    <textarea id="reels-lote-texto" rows="6" placeholder="https://…&#10;https://…&#10;https://…" style="width:100%;margin:6px 0 8px;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;resize:vertical;"></textarea>
+    <button type="button" onclick="reelsLoteAnalisar()" style="width:100%;padding:11px;border-radius:12px;border:0;background:#f0b429;color:#1a1300;font-weight:800;font-size:14px;cursor:pointer;">Analisar links</button>
+    <div id="reels-lote-estado" style="font-size:12.5px;opacity:.85;margin:10px 0;min-height:16px;"></div>
+    <div id="reels-lote-lista"></div>
   </div>
   <div id="reels-bloco-novo">
   <label style="font-size:13px;font-weight:700;">Nome do Reels <span style="font-weight:600;opacity:.7;">— sem capa, o nome aparece como capa</span></label>
@@ -2005,11 +2013,13 @@ try{var _l=new URLSearchParams(location.search).get("l");if(_l&&/^(pt|en|es|fr)$
     <button type="button" onclick="reelsAddGenero()" style="padding:9px 14px;border-radius:10px;border:1px dashed var(--line,#252b38);background:none;color:inherit;font-weight:700;cursor:pointer;">＋</button>
   </div>
   </div>
+  <div id="reels-bloco-links">
   <label style="font-size:13px;font-weight:700;display:block;">Links (sem limite — cada um é uma parte) <span id="reels-count" style="opacity:.7;font-weight:600;"></span></label>
   <div id="reels-links" style="margin:6px 0 8px;"></div>
   <button type="button" onclick="reelsAddLink()" style="padding:9px 14px;border-radius:10px;border:1px dashed var(--line,#252b38);background:none;color:inherit;font-weight:700;cursor:pointer;">＋ Adicionar link</button>
   <textarea id="reels-bulk" rows="4" placeholder="Ou cole vários links de uma vez (um por linha, 30, 40, 50… sem limite)" style="width:100%;margin:10px 0 6px;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;resize:vertical;"></textarea>
   <button type="button" onclick="reelsColarLinks()" style="padding:9px 14px;border-radius:10px;border:1px dashed var(--line,#252b38);background:none;color:inherit;font-weight:700;cursor:pointer;">Adicionar todos os links colados</button>
+  </div>
   <div style="margin:18px 0 4px;padding:12px;border:1px solid var(--line,#252b38);border-radius:12px;">
     <div style="font-size:13.5px;font-weight:800;margin-bottom:4px;">O seu perfil e o seu anúncio <span style="opacity:.7;font-weight:600;">(opcional)</span></div>
     <p style="font-size:12px;color:var(--muted,#8b93a7);margin-bottom:10px;">Quem assistir vê o seu nome e o seu perfil (“Siga este canal / servidor”). O link do anúncio abre dentro da app, entre os episódios que você publicou.</p>
@@ -2018,6 +2028,10 @@ try{var _l=new URLSearchParams(location.search).get("l");if(_l&&/^(pt|en|es|fr)$
     <div id="reels-perfil-info" style="font-size:12px;min-height:16px;margin-bottom:10px;"></div>
     <label style="font-size:13px;font-weight:700;">Link do seu anúncio (Monetag, Facebook ou outro)</label>
     <input type="text" id="reels-anuncio" placeholder="https://..." style="width:100%;margin:6px 0 0;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;">
+  </div>
+  <div id="reels-lote-envio" style="display:none;margin-top:14px;">
+    <div id="reels-lote-msg" style="font-size:13px;margin:0 0 10px;min-height:18px;"></div>
+    <button type="button" id="reels-lote-enviar" onclick="reelsLoteEnviar()" style="width:100%;padding:13px;border-radius:12px;border:0;background:#f0b429;color:#1a1300;font-weight:800;font-size:15px;cursor:pointer;">Enviar todas para análise</button>
   </div>
   <div id="reels-msg" style="font-size:13px;margin:12px 0;min-height:18px;"></div>
   <button type="button" id="reels-enviar" onclick="reelsEnviar()" style="width:100%;padding:13px;border-radius:12px;border:0;background:#f0b429;color:#1a1300;font-weight:800;font-size:15px;cursor:pointer;">Enviar para análise</button>
@@ -8578,6 +8592,7 @@ function capaReelsSVG(titulo,generos){
 }
 
   window.capaReelsSVG=capaReelsSVG;
+  window.__reelsAux={db:dbReels,nome:nomeCriador,perfil:infoPerfil,capaLink:capaDoLink};
   function nomeCriador(){return (el('reels-nome')&&el('reels-nome').value.trim())||localStorage.getItem('meu_nome_criador')||'';}
   function contaHtml(){
     var n=localStorage.getItem('meu_nome_criador')||'';
@@ -8831,5 +8846,203 @@ function capaReelsSVG(titulo,generos){
   };
 })();
 </script>
+<script>
+/* ===== REELS · VÁRIAS SÉRIES DE UMA VEZ (só links) — acrescentado; não mexe no resto =====
+   Cola os links (um por linha) → analisa → mostra capa, nome e descrição de cada um → envia tudo.
+   Cada link vira um Reels próprio (pedido em reels_pedidos, igual ao envio normal). */
+(function(){
+  function el(i){return document.getElementById(i);}
+  function aux(){return window.__reelsAux||{};}
+  var itens=[],ocupado=false,emLote=false;
+  var GENERICO=/^(google drive|google drive:.*|youtube|facebook|instagram|tiktok|vimeo|log ?in.*|sign ?in.*|entrar.*|just a moment.*|access denied|attention required.*|403.*|404.*)$/i;
+  function bom(t){t=(t||'').trim();return !!t&&!GENERICO.test(t);}
+  function limpaTitulo(t){return String(t||'').replace(/\s*[-|–—]\s*(YouTube|Facebook|Instagram|TikTok|Google Drive)\s*$/i,'').replace(/\s+/g,' ').trim().replace(/[<>]/g,'').slice(0,80);}
+  function limpaDesc(t){return String(t||'').replace(/\s+/g,' ').trim().replace(/[<>]/g,'').slice(0,600);}
+  function nomeDoLink(l){
+    try{
+      var u=new URL(l),seg=decodeURIComponent(u.pathname).split('/').filter(Boolean).pop()||'';
+      seg=seg.replace(/\.[a-z0-9]{2,4}$/i,'').replace(/[-_+]+/g,' ').trim();
+      if(seg&&seg.indexOf(' ')>0||(seg&&seg.length<=24&&!/\d{4,}/.test(seg)))return limpaTitulo(seg);
+      return limpaTitulo(u.hostname.replace(/^www\./,''));
+    }catch(e){return 'Reels';}
+  }
+  function jfetch(url,ms,tipo){
+    var c=('AbortController' in window)?new AbortController():null,t=setTimeout(function(){if(c)c.abort();},ms||9000);
+    return fetch(url,c?{signal:c.signal}:{}).then(function(r){clearTimeout(t);if(!r.ok)throw new Error('http');return tipo==='text'?r.text():r.json();},function(e){clearTimeout(t);throw e;});
+  }
+  function metaMicrolink(l){
+    return jfetch('https://api.microlink.io/?url='+encodeURIComponent(l),10000).then(function(j){
+      var d=(j&&j.data)||{};return {titulo:d.title||'',descricao:d.description||'',capa:(d.image&&d.image.url)||''};
+    });
+  }
+  function metaOembedYT(l){
+    return jfetch('https://www.youtube.com/oembed?format=json&url='+encodeURIComponent(l),8000).then(function(j){
+      return {titulo:(j&&j.title)||'',descricao:'',capa:(j&&j.thumbnail_url)||''};
+    });
+  }
+  function metaOG(l){
+    return jfetch('https://api.allorigins.win/raw?url='+encodeURIComponent(l),10000,'text').then(function(h){
+      var d=new DOMParser().parseFromString(h,'text/html');
+      function m(p){var e=d.querySelector('meta[property="'+p+'"],meta[name="'+p+'"]');return e?(e.getAttribute('content')||''):'';}
+      return {titulo:m('og:title')||d.title||'',descricao:m('og:description')||m('description'),capa:m('og:image')};
+    });
+  }
+  function obterMeta(l){
+    var r={titulo:'',descricao:'',capa:''};
+    function junta(m){
+      if(!m)return;
+      var t=limpaTitulo(m.titulo),d=limpaDesc(m.descricao);
+      if(!bom(r.titulo)&&bom(t))r.titulo=t;
+      if(!r.descricao&&d&&!/^(sign ?in|log ?in|entrar)/i.test(d))r.descricao=d;
+      if(!r.capa&&/^https?:\/\//i.test(m.capa||''))r.capa=m.capa;
+    }
+    function completo(){return bom(r.titulo)&&!!r.descricao;}
+    var yt=/youtu/i.test(l),nada=function(){return null;};
+    return metaMicrolink(l).catch(nada).then(function(m){
+      junta(m);if(completo())return;
+      return (yt?metaOembedYT(l).catch(nada):Promise.resolve(null)).then(function(m2){
+        junta(m2);if(completo())return;
+        return metaOG(l).catch(nada).then(junta);
+      });
+    }).then(function(){return r;});
+  }
+  function capaItem(it){
+    if(it.capa)return it.capa;
+    var d=aux().capaLink?aux().capaLink(it.link):'';
+    return d||'';
+  }
+  function pintaCapa(it){
+    var i=it.img;if(!i)return;
+    var svg=function(){return window.capaReelsSVG?window.capaReelsSVG(it.titulo||nomeDoLink(it.link),[]):'';};
+    var c=capaItem(it);
+    i.onerror=null;
+    if(c){i.onerror=function(){i.onerror=null;i.src=svg();};i.src=c;}else i.src=svg();
+  }
+  var CAMPO='width:100%;padding:9px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;';
+  function criaCard(it){
+    var c=document.createElement('div');
+    c.style.cssText='display:flex;gap:10px;padding:10px;border:1px solid var(--line,#252b38);border-radius:12px;margin-bottom:10px;';
+    var img=document.createElement('img');img.alt='';
+    img.style.cssText='width:72px;height:96px;object-fit:cover;border-radius:10px;flex:0 0 72px;background:var(--panel2,#1a1f2a);border:1px solid var(--line,#252b38);';
+    var col=document.createElement('div');col.style.cssText='flex:1;min-width:0;';
+    var topo=document.createElement('div');topo.style.cssText='display:flex;align-items:center;gap:6px;margin-bottom:6px;';
+    var st=document.createElement('span');st.style.cssText='flex:1;font-size:11.5px;font-weight:700;opacity:.85;';
+    var rm=document.createElement('button');rm.type='button';rm.setAttribute('aria-label','Remover');
+    rm.style.cssText='border:0;background:none;color:inherit;opacity:.75;cursor:pointer;padding:4px;display:flex;';
+    rm.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+    topo.appendChild(st);topo.appendChild(rm);
+    var nome=document.createElement('input');nome.type='text';nome.maxLength=80;nome.placeholder='Nome';nome.style.cssText=CAMPO+'margin-bottom:6px;font-weight:700;';
+    var sin=document.createElement('textarea');sin.rows=3;sin.maxLength=600;sin.placeholder='Sinopse (do link)';sin.style.cssText=CAMPO+'resize:vertical;';
+    var lk=document.createElement('div');lk.style.cssText='font-size:11px;opacity:.6;margin-top:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';lk.textContent=it.link;
+    col.appendChild(topo);col.appendChild(nome);col.appendChild(sin);col.appendChild(lk);
+    c.appendChild(img);c.appendChild(col);
+    nome.addEventListener('input',function(){it.titulo=nome.value.trim().replace(/[<>]/g,'');if(!it.capa&&!(aux().capaLink&&aux().capaLink(it.link)))pintaCapa(it);});
+    sin.addEventListener('input',function(){it.sinopse=sin.value.trim();sin.style.borderColor='';});
+    rm.onclick=function(){itens=itens.filter(function(x){return x!==it;});c.remove();contador();};
+    it.card=c;it.img=img;it.st=st;it.nomeEl=nome;it.sinEl=sin;
+    return c;
+  }
+  function marca(it,txt,cor){it.st.textContent=txt;it.st.style.color=cor||'';}
+  function contador(){
+    var n=itens.length,s=el('reels-lote-estado'),b=el('reels-lote-envio');
+    if(s&&!ocupado)s.textContent=n?(n+(n===1?' série pronta':' séries prontas')+' — confira e envie.'):'';
+    if(b)b.style.display=(emLote&&n)?'block':'none';
+  }
+  function analisarItem(it){
+    marca(it,'A analisar…','#f0b429');
+    return obterMeta(it.link).then(function(m){
+      it.capa=m.capa||'';
+      it.titulo=bom(m.titulo)?m.titulo:nomeDoLink(it.link);
+      it.sinopse=m.descricao||'';
+      if(!it.sinopse&&bom(m.titulo))it.sinopse=m.titulo; // sem descrição: usa o nome, para a sinopse nunca ir vazia
+      it.nomeEl.value=it.titulo;it.sinEl.value=it.sinopse;
+      pintaCapa(it);
+      if(it.sinopse&&m.descricao)marca(it,'✓ Pronto','#3dd68c');
+      else marca(it,it.sinopse?'✓ Pronto (sem descrição no link — conferir)':'Preencha a sinopse','#f0b429');
+      it.feito=true;
+    },function(){
+      it.titulo=nomeDoLink(it.link);it.nomeEl.value=it.titulo;pintaCapa(it);marca(it,'Preencha a sinopse','#f0b429');it.feito=true;
+    });
+  }
+  function pool(arr,n,fn){
+    var i=0;
+    function prox(){if(i>=arr.length)return Promise.resolve();var x=arr[i++];return fn(x).then(prox,prox);}
+    var w=[];for(var k=0;k<Math.min(n,arr.length);k++)w.push(prox());
+    return Promise.all(w);
+  }
+  window.reelsLoteAnalisar=function(){
+    var t=el('reels-lote-texto'),m=el('reels-lote-msg'),est=el('reels-lote-estado');
+    if(ocupado)return;
+    var vals=(t.value.match(/https?:\/\/[^\s,;"'<>]+/g)||[]);
+    var ja={};itens.forEach(function(x){ja[x.link]=1;});
+    var novos=[];vals.forEach(function(v){if(!ja[v]){ja[v]=1;novos.push(v);}});
+    if(!vals.length){m.style.color='#ff9c94';m.textContent='Cole pelo menos um link (https://…), um por linha.';t.focus();return;}
+    m.textContent='';
+    if(!novos.length){m.style.color='#f0b429';m.textContent='Esses links já estão na lista.';t.value='';return;}
+    var lista=el('reels-lote-lista'),novosIt=[];
+    novos.forEach(function(l){var it={link:l,titulo:'',sinopse:'',capa:'',feito:false};itens.push(it);lista.appendChild(criaCard(it));marca(it,'Na fila…');pintaCapa(it);novosIt.push(it);});
+    t.value='';ocupado=true;
+    var feitos=0;est.textContent='A analisar 0/'+novosIt.length+'…';
+    pool(novosIt,3,function(it){return analisarItem(it).then(function(){feitos++;est.textContent='A analisar '+feitos+'/'+novosIt.length+'…';});}).then(function(){ocupado=false;contador();});
+    contador();
+  };
+  window.reelsLoteEnviar=function(){
+    var m=el('reels-lote-msg'),btn=el('reels-lote-enviar');
+    function erro(x){m.style.color='#ff6b6b';m.textContent=x;}
+    if(ocupado)return erro('Espere a análise terminar.');
+    if(!itens.length)return erro('Cole os links das séries primeiro.');
+    for(var i=0;i<itens.length;i++){
+      var it=itens[i];
+      if(!it.sinopse){it.sinEl.style.borderColor='#ff6b6b';it.card.scrollIntoView({block:'center'});it.sinEl.focus();return erro('Escreva a sinopse de «'+(it.titulo||'Reels')+'».');}
+    }
+    var pfRaw=(el('reels-perfil').value||'').trim(),A=aux();
+    var pf=pfRaw?A.perfil(pfRaw):{ok:true,link:'',tipo:'',rotulo:''};
+    if(pfRaw&&!pf.ok)return erro('O link do perfil/canal não é válido (https://… ou e-mail) — ou deixe em branco.');
+    var anu=(el('reels-anuncio').value||'').trim();
+    if(anu&&!/^https?:\/\//i.test(anu))return erro('O link do anúncio tem de começar por https:// — ou deixe em branco.');
+    var db=A.db&&A.db();if(!db)return erro('Sem ligação ao servidor agora. Tente de novo daqui a pouco.');
+    var nome=(A.nome&&A.nome())||'Anônimo',perfil={link:pf.link||'',tipo:pf.tipo||'',rotulo:pf.rotulo||''};
+    var pedidos=itens.map(function(it,k){
+      var capa=capaItem(it);
+      return {id:'r'+Date.now().toString(36)+k.toString(36)+Math.random().toString(36).slice(2,5),tipo:'novo',criador:nome,titulo:(it.titulo||'').slice(0,80),sinopse:it.sinopse.slice(0,600),capa:capa,
+        perfil:perfil,anuncio:anu,partes:[{parte:1,link:it.link,criador:nome,perfil:perfil,anuncio:anu}],
+        generos:[],capaAuto:!capa,status:'pendente',criadoEm:Date.now()+k};
+    });
+    btn.disabled=true;m.style.color='#f0b429';m.textContent='A enviar '+pedidos.length+(pedidos.length===1?' série…':' séries…');
+    Promise.all(pedidos.map(function(p){return db.ref('reels_pedidos/'+p.id).set(p);})).then(function(){
+      if(window.avisoEnvio)window.avisoEnvio('✅ Enviado com sucesso!',true);
+      try{localStorage.setItem('reels_perfil_link',pf.link);localStorage.setItem('reels_anuncio_link',anu);}catch(e){}
+      try{registarMensagemPendenteLocal({usuario:nome,titulo:'Reels: '+pedidos.length+(pedidos.length===1?' série':' séries'),capa:pedidos[0].capa,tipo:'Reels'});}catch(e){}
+      itens=[];el('reels-lote-lista').innerHTML='';
+      m.style.color='#3dd68c';m.textContent=pedidos.length+(pedidos.length===1?' série enviada':' séries enviadas')+' para análise. Obrigado!';
+      btn.disabled=false;contador();
+    }).catch(function(){btn.disabled=false;erro('Não foi possível enviar. Tente novamente.');if(window.avisoEnvio)window.avisoEnvio('❌ Não foi possível enviar',false);});
+  };
+  // modo "Várias séries": acrescenta-se ao seletor sem alterar Novo / Atualizar
+  var orig=window.reelsModo;
+  function pilula(b,on){if(!b)return;b.style.cssText='flex:1;padding:10px 12px;border-radius:999px;font-weight:700;font-size:13px;cursor:pointer;border:1px solid '+(on?'#f0b429':'var(--line,#252b38)')+';background:'+(on?'#f0b429':'none')+';color:'+(on?'#1a1300':'inherit')+';';}
+  window.reelsModo=function(m){
+    emLote=(m==='lote');
+    if(typeof orig==='function')orig(emLote?'novo':m);
+    var mostra=function(id,v){var e=el(id);if(e)e.style.display=v;};
+    mostra('reels-bloco-lote',emLote?'block':'none');
+    if(emLote){
+      mostra('reels-bloco-novo','none');mostra('reels-atualizar','none');mostra('reels-bloco-links','none');
+      mostra('reels-msg','none');mostra('reels-enviar','none');
+      pilula(el('reels-modo-novo'),false);pilula(el('reels-modo-atual'),false);
+    }else{
+      mostra('reels-bloco-links','');mostra('reels-msg','');mostra('reels-enviar','');
+    }
+    pilula(el('reels-modo-lote'),emLote);
+    contador();
+  };
+  document.addEventListener('DOMContentLoaded',function(){
+    var t=el('reels-lote-texto');
+    if(t)t.addEventListener('paste',function(){setTimeout(function(){window.reelsLoteAnalisar();},60);});
+    pilula(el('reels-modo-lote'),false);
+  });
+})();
+</script>
+
 </body>
 </html>
