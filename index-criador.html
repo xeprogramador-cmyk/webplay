@@ -1990,6 +1990,11 @@ try{var _l=new URLSearchParams(location.search).get("l");if(_l&&/^(pt|en|es|fr)$
       <div id="reels-alvo-info" style="font-size:12.5px;opacity:.8;margin:4px 0 10px;"></div>
       <button type="button" onclick="reelsTrocarAlvo()" style="padding:8px 14px;border-radius:10px;border:1px dashed var(--line,#252b38);background:none;color:inherit;font-weight:700;cursor:pointer;">Escolher outro Reels</button>
     </div>
+    <div id="reels-edit" style="display:none;margin-top:12px;padding:12px;border:1px solid var(--line,#252b38);border-radius:12px;">
+      <div style="font-size:13.5px;font-weight:800;margin-bottom:4px;">Mudar o nome <span style="opacity:.7;font-weight:600;">(opcional)</span></div>
+      <p style="font-size:12px;color:var(--muted,#8b93a7);margin-bottom:10px;">Aqui só se pode mudar o nome e aumentar os episódios: use os links logo abaixo para acrescentar episódios novos (eles entram depois dos que já existem). O Reels continua como está até o administrador aprovar.</p>
+      <input type="text" id="reels-edit-titulo" maxlength="150" style="width:100%;margin:6px 0 0;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;">
+    </div>
   </div>
   <div id="reels-bloco-lote" style="display:none;margin-bottom:14px;">
     <label style="font-size:13px;font-weight:700;display:block;">Cole os links das séries / filmes <span style="font-weight:600;opacity:.7;">— sem limite; pode colar seguidos, ele separa sozinho</span></label>
@@ -8724,27 +8729,39 @@ function capaReelsSVG(titulo,generos){
     if(!b)return;
     b.style.cssText='flex:1;padding:10px 12px;border-radius:999px;font-weight:700;font-size:13px;cursor:pointer;border:1px solid '+(on?'#f0b429':'var(--line,#252b38)')+';background:'+(on?'#f0b429':'none')+';color:'+(on?'#1a1300':'inherit')+';';
   }
+  var catT=0;
+  function mapearCatalogo(v,soAprovados){
+    var out=[];
+    if(!v)return out;
+    (Array.isArray(v)?v.map(function(_,i){return i;}):Object.keys(v)).forEach(function(k){
+      var r=v[k];if(!r||typeof r!=='object')return;
+      var stt=String(r.status||'').toLowerCase();
+      if(stt==='pendente'||stt==='rejeitado'||stt==='recusado'||stt==='negado'||stt==='rejeitada')return;
+      if(soAprovados&&(stt!=='aprovado'&&stt!=='aprovada'||r.tipo==='atualizacao'))return;
+      var ps=r.partes?(Array.isArray(r.partes)?r.partes:Object.keys(r.partes).map(function(x){return r.partes[x];})):[];
+      ps=ps.filter(Boolean);
+      var n=ps.length;
+      ps.forEach(function(p){if(p&&typeof p.parte==='number'&&p.parte>n)n=p.parte;});
+      out.push({id:String(r.id||k),titulo:String(r.titulo||r.nome||''),sinopse:String(r.sinopse||''),capa:String(r.capa||''),generos:Array.isArray(r.generos)?r.generos:[],criador:String(r.criador||''),n:n,t:Number(r.criadoEm)||0});
+    });
+    return out;
+  }
   function carregarCatalogo(fim){
     var st=el('reels-cat-estado'),db=dbReels();
-    if(catalogoReels){fim();return;}
+    if(catalogoReels&&Date.now()-catT<60000){fim();return;}
     if(!db){st.textContent='Sem ligação ao servidor agora.';return;}
     st.textContent='A carregar o catálogo…';
+    function falha(e){
+      var c=String((e&&(e.code||e.message))||'');
+      st.textContent=/permission/i.test(c)?'O servidor não deixou ler o catálogo (regras do Firebase). Avise o administrador.':'Não consegui carregar o catálogo de Reels. Tente de novo daqui a pouco.';
+    }
+    function pronto(out){out.sort(function(a,b){return b.t-a.t;});catalogoReels=out;catT=Date.now();st.textContent='';fim();}
     db.ref(NO_CATALOGO).once('value').then(function(s){
-      var v=s.val(),out=[];
-      if(v){
-        (Array.isArray(v)?v.map(function(_,i){return i;}):Object.keys(v)).forEach(function(k){
-          var r=v[k];if(!r||typeof r!=='object')return;
-          if(r.status==='pendente'||r.status==='rejeitado'||r.status==='recusado')return;
-          var ps=r.partes?(Array.isArray(r.partes)?r.partes:Object.keys(r.partes).map(function(x){return r.partes[x];})):[];
-          ps=ps.filter(Boolean);
-          var n=ps.length;
-          ps.forEach(function(p){if(p&&typeof p.parte==='number'&&p.parte>n)n=p.parte;});
-          out.push({id:String(r.id||k),titulo:String(r.titulo||r.nome||''),sinopse:String(r.sinopse||''),capa:String(r.capa||''),generos:Array.isArray(r.generos)?r.generos:[],criador:String(r.criador||''),n:n,t:Number(r.criadoEm)||0});
-        });
-      }
-      out.sort(function(a,b){return b.t-a.t;});
-      catalogoReels=out;st.textContent='';fim();
-    }).catch(function(){st.textContent='Não consegui carregar o catálogo de Reels. Tente de novo daqui a pouco.';});
+      var out=mapearCatalogo(s.val(),false);
+      if(out.length)return pronto(out);
+      // catálogo vazio: procura os Reels já aprovados nos pedidos
+      return db.ref(NO_PEDIDOS).once('value').then(function(s2){pronto(mapearCatalogo(s2.val(),true));});
+    }).catch(falha);
   }
   function pintarCatalogo(){
     var box=el('reels-cat-lista'),st=el('reels-cat-estado');
@@ -8780,6 +8797,7 @@ function capaReelsSVG(titulo,generos){
     el('reels-alvo-nome').textContent='A atualizar: '+(r.titulo||r.sinopse.slice(0,50)||'Reels');
     el('reels-alvo-info').textContent='Já tem '+r.n+(r.n===1?' parte':' partes')+' — as suas começam na parte '+(r.n+1)+'.';
     reelsRenum();
+    if(window.__reelsAlvoMudou)window.__reelsAlvoMudou(r);
     window.scrollTo(0,0);
   }
   window.reelsTrocarAlvo=function(){
@@ -8787,6 +8805,7 @@ function capaReelsSVG(titulo,generos){
     el('reels-alvo').style.display='none';
     el('reels-cat-pesquisa').style.display='block';
     reelsRenum();
+    if(window.__reelsAlvoMudou)window.__reelsAlvoMudou(null);
   };
   window.reelsBuscar=pintarCatalogo;
   window.reelsModo=function(m){
@@ -8803,6 +8822,7 @@ function capaReelsSVG(titulo,generos){
     var links=Array.prototype.map.call(document.querySelectorAll('#reels-links .reels-link'),function(i){return i.value.trim();}).filter(Boolean);
     function erro(t){msg.style.color='#ff6b6b';msg.textContent=t;}
     var sin='',capa='',titulo='',generos=[];
+    var alt=(at&&window.__reelsAlteracoes)?window.__reelsAlteracoes():null;if(alt&&alt.erro)return erro(alt.erro);
     if(at){
       if(!alvoReels)return erro('Procure e escolha o Reels que quer atualizar.');
       sin=alvoReels.sinopse;capa=alvoReels.capa;titulo=alvoReels.titulo;
@@ -8814,7 +8834,7 @@ function capaReelsSVG(titulo,generos){
       if(!capa)capa=window.reelsCapaFinal().capa; // sem capa: usa a miniatura do link (se houver); senão fica a capa automática com o nome
       generos=Object.keys(generosSel);
     }
-    if(!links.length)return erro('Adicione pelo menos um link.');
+    if(!links.length&&!(alt&&alt.campos))return erro(at?'Adicione um link novo ou altere algum dado do Reels.':'Adicione pelo menos um link.');
     if(links.some(function(l){return !/^https?:\/\//i.test(l);}))return erro('Todos os links têm de começar por https://');
     var pfRaw=(el('reels-perfil').value||'').trim();
     var pf=pfRaw?infoPerfil(pfRaw):{ok:true,link:'',tipo:'',rotulo:''};
@@ -8827,7 +8847,7 @@ function capaReelsSVG(titulo,generos){
       perfil:perfil,anuncio:anu,
       partes:links.map(function(l,i){return {parte:base+i+1,link:l,criador:nome,perfil:perfil,anuncio:anu};}),
       generos:generos,capaAuto:(!at&&!capa),status:'pendente',criadoEm:Date.now()};
-    if(at){pedido.alvoId=alvoReels.id;pedido.parteInicial=base+1;}
+    if(at){pedido.alvoId=alvoReels.id;pedido.parteInicial=base+1;if(alt&&alt.campos)pedido.alteracoes=alt.campos;}
     var db=dbReels();
     if(!db)return erro('Sem ligação ao servidor agora. Tente de novo daqui a pouco.');
     el('reels-enviar').disabled=true;msg.style.color='#f0b429';msg.textContent='A enviar…';
@@ -8856,8 +8876,44 @@ function capaReelsSVG(titulo,generos){
   var itens=[],ocupado=false,emLote=false;
   var GENERICO=/^(google drive|google drive:.*|youtube|facebook|instagram|tiktok|vimeo|log ?in.*|sign ?in.*|entrar.*|just a moment.*|access denied|attention required.*|403.*|404.*)$/i;
   function bom(t){t=(t||'').trim();return !!t&&!GENERICO.test(t);}
-  function limpaTitulo(t){return String(t||'').replace(/\s*[-|–—]\s*(YouTube|Facebook|Instagram|TikTok|Google Drive)\s*$/i,'').replace(/\s+/g,' ').trim().replace(/[<>]/g,'').slice(0,80);}
-  function limpaDesc(t){return String(t||'').replace(/\s+/g,' ').trim().replace(/[<>]/g,'').slice(0,600);}
+  var RE_TAG=/#[\p{L}\p{N}_]+/gu;
+  function extraiTags(t){return (String(t||'').match(RE_TAG)||[]).map(function(x){return x.slice(1);});}
+  function limpaTitulo(t){return String(t||'').replace(RE_TAG,'').replace(/\s*[-|–—]\s*(YouTube|Facebook|Instagram|TikTok|Google Drive)\s*$/i,'').replace(/\s+/g,' ').trim().replace(/[<>]/g,'').slice(0,120);}
+  function limpaDesc(t){return String(t||'').replace(RE_TAG,'').replace(/[<>]/g,'').replace(/[ \t]+/g,' ').replace(/ ?\n ?/g,'\n').replace(/\n{3,}/g,'\n\n').trim();} // sem limite de tamanho
+  // hashtags → dublado / legendado / idioma
+  var SUF=/(\s*\/\s*(Dublado|Legendado|Português|Inglês|Francês|Espanhol))+\s*$/i;
+  function idiomasDasTags(tags){
+    var dl='',ex=[];
+    (tags||[]).forEach(function(x){
+      var t=String(x).toLowerCase();try{t=t.normalize('NFD').replace(/[\u0300-\u036f]/g,'');}catch(e){}
+      t=t.replace(/[^a-z0-9]/g,'');
+      var lab='',isdl=false;
+      if(/^dub/.test(t)){lab='Dublado';isdl=true;}
+      else if(/^(leg|legend|sub|subs|subtitle|subtitulad)/.test(t)){lab='Legendado';isdl=true;}
+      else if(/^(pt|ptbr|port|portu|porto|portugues|portuguese)/.test(t)){lab='Português';}
+      else if(/^(ing|ingles|eng|english)$/.test(t)){lab='Inglês';}
+      else if(/^(fr|fra|frances|french|francais)$/.test(t)){lab='Francês';}
+      else if(/^(esp|espanhol|spanish|espanol)$/.test(t)){lab='Espanhol';}
+      if(!lab)return;
+      if(isdl){if(!dl)dl=lab;}else if(ex.indexOf(lab)<0)ex.push(lab);
+    });
+    return {dl:dl,extras:ex};
+  }
+  function pintaChips(it){
+    if(!it.chips)return;
+    ['Dublado','Legendado'].forEach(function(n){
+      var on=it.dl===n,b=it.chips[n];
+      b.style.cssText='padding:5px 11px;border-radius:999px;font-weight:700;font-size:12px;cursor:pointer;border:1px solid '+(on?'#f0b429':'var(--line,#252b38)')+';background:'+(on?'#f0b429':'none')+';color:'+(on?'#1a1300':'inherit')+';';
+    });
+    if(it.rot)it.rot.textContent=it.dl?'Idioma:':'É dublado ou legendado? (opcional)';
+  }
+  function montaNome(it){
+    var p=[];if(it.dl)p.push(it.dl);(it.extras||[]).forEach(function(x){if(p.indexOf(x)<0)p.push(x);});
+    it.titulo=((it.base||'').trim()+(p.length?' / '+p.join(' / '):'')).slice(0,150);
+    if(it.nomeEl)it.nomeEl.value=it.titulo;
+    pintaChips(it);
+    if(it.img&&!it.capa&&!(aux().capaLink&&aux().capaLink(it.link)))pintaCapa(it);
+  }
   function nomeDoLink(l){
     try{
       var u=new URL(l),seg=decodeURIComponent(u.pathname).split('/').filter(Boolean).pop()||'';
@@ -8887,23 +8943,31 @@ function capaReelsSVG(titulo,generos){
       return {titulo:m('og:title')||d.title||'',descricao:m('og:description')||m('description'),capa:m('og:image')};
     });
   }
+  function metaPaginaYT(l){
+    return jfetch('https://api.allorigins.win/raw?url='+encodeURIComponent(l),12000,'text').then(function(h){
+      var m=h.match(/"shortDescription":"((?:[^"\\]|\\.)*)"/),d='';
+      if(m){try{d=JSON.parse('"'+m[1]+'"');}catch(e){d='';}}
+      var tt=h.match(/<meta property="og:title" content="([^"]*)"/),im=h.match(/<meta property="og:image" content="([^"]*)"/);
+      var dd=document.createElement('textarea');
+      function dec(x){dd.innerHTML=x||'';return dd.value;}
+      return {titulo:dec(tt&&tt[1]),descricao:d,capa:dec(im&&im[1])};
+    });
+  }
   function obterMeta(l){
-    var r={titulo:'',descricao:'',capa:''};
+    var r={titulo:'',descricao:'',capa:'',tags:[]};
     function junta(m){
       if(!m)return;
+      r.tags=r.tags.concat(extraiTags((m.titulo||'')+' '+(m.descricao||'')));
       var t=limpaTitulo(m.titulo),d=limpaDesc(m.descricao);
       if(!bom(r.titulo)&&bom(t))r.titulo=t;
-      if(!r.descricao&&d&&!/^(sign ?in|log ?in|entrar)/i.test(d))r.descricao=d;
+      if(d&&!/^(sign ?in|log ?in|entrar)/i.test(d)&&d.length>r.descricao.length)r.descricao=d; // fica sempre a descrição mais completa
       if(!r.capa&&/^https?:\/\//i.test(m.capa||''))r.capa=m.capa;
     }
-    function completo(){return bom(r.titulo)&&!!r.descricao;}
     var yt=/youtu/i.test(l),nada=function(){return null;};
     return metaMicrolink(l).catch(nada).then(function(m){
-      junta(m);if(completo())return;
-      return (yt?metaOembedYT(l).catch(nada):Promise.resolve(null)).then(function(m2){
-        junta(m2);if(completo())return;
-        return metaOG(l).catch(nada).then(junta);
-      });
+      junta(m);
+      if(yt)return metaOembedYT(l).catch(nada).then(function(m2){junta(m2);return metaPaginaYT(l).catch(nada).then(junta);});
+      if(!bom(r.titulo)||r.descricao.length<300)return metaOG(l).catch(nada).then(junta);
     }).then(function(){return r;});
   }
   function capaItem(it){
@@ -8931,15 +8995,19 @@ function capaReelsSVG(titulo,generos){
     rm.style.cssText='border:0;background:none;color:inherit;opacity:.75;cursor:pointer;padding:4px;display:flex;';
     rm.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
     topo.appendChild(st);topo.appendChild(rm);
-    var nome=document.createElement('input');nome.type='text';nome.maxLength=80;nome.placeholder='Nome';nome.style.cssText=CAMPO+'margin-bottom:6px;font-weight:700;';
-    var sin=document.createElement('textarea');sin.rows=3;sin.maxLength=600;sin.placeholder='Sinopse (do link)';sin.style.cssText=CAMPO+'resize:vertical;';
+    var nome=document.createElement('input');nome.type='text';nome.maxLength=150;nome.placeholder='Nome';nome.style.cssText=CAMPO+'margin-bottom:6px;font-weight:700;';
+    var sin=document.createElement('textarea');sin.rows=3;sin.placeholder='Sinopse (do link)';sin.style.cssText=CAMPO+'resize:vertical;';
     var lk=document.createElement('div');lk.style.cssText='font-size:11px;opacity:.6;margin-top:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';lk.textContent=it.link;
-    col.appendChild(topo);col.appendChild(nome);col.appendChild(sin);col.appendChild(lk);
+    var linha=document.createElement('div');linha.style.cssText='display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px;';
+    var rot=document.createElement('span');rot.style.cssText='font-size:11.5px;opacity:.8;';linha.appendChild(rot);
+    it.chips={};it.rot=rot;
+    ['Dublado','Legendado'].forEach(function(n){var b=document.createElement('button');b.type='button';b.textContent=n;b.onclick=function(){it.dl=(it.dl===n)?'':n;montaNome(it);};linha.appendChild(b);it.chips[n]=b;});
+    col.appendChild(topo);col.appendChild(nome);col.appendChild(sin);col.appendChild(linha);col.appendChild(lk);
     c.appendChild(img);c.appendChild(col);
-    nome.addEventListener('input',function(){it.titulo=nome.value.trim().replace(/[<>]/g,'');if(!it.capa&&!(aux().capaLink&&aux().capaLink(it.link)))pintaCapa(it);});
+    nome.addEventListener('input',function(){it.titulo=nome.value.trim().replace(/[<>]/g,'');it.base=it.titulo.replace(SUF,'').trim();if(!it.capa&&!(aux().capaLink&&aux().capaLink(it.link)))pintaCapa(it);});
     sin.addEventListener('input',function(){it.sinopse=sin.value.trim();sin.style.borderColor='';});
     rm.onclick=function(){itens=itens.filter(function(x){return x!==it;});c.remove();contador();};
-    it.card=c;it.img=img;it.st=st;it.nomeEl=nome;it.sinEl=sin;
+    it.card=c;it.img=img;it.st=st;it.nomeEl=nome;it.sinEl=sin;it.dl='';it.extras=[];pintaChips(it);
     return c;
   }
   function marca(it,txt,cor){it.st.textContent=txt;it.st.style.color=cor||'';}
@@ -8952,16 +9020,18 @@ function capaReelsSVG(titulo,generos){
     marca(it,'A analisar…','#f0b429');
     return obterMeta(it.link).then(function(m){
       it.capa=m.capa||'';
-      it.titulo=bom(m.titulo)?m.titulo:nomeDoLink(it.link);
+      it.base=bom(m.titulo)?m.titulo:nomeDoLink(it.link);
+      var id=idiomasDasTags(m.tags);it.dl=id.dl;it.extras=id.extras;
       it.sinopse=m.descricao||'';
       if(!it.sinopse&&bom(m.titulo))it.sinopse=m.titulo; // sem descrição: usa o nome, para a sinopse nunca ir vazia
-      it.nomeEl.value=it.titulo;it.sinEl.value=it.sinopse;
-      pintaCapa(it);
-      if(it.sinopse&&m.descricao)marca(it,'✓ Pronto','#3dd68c');
-      else marca(it,it.sinopse?'✓ Pronto (sem descrição no link — conferir)':'Preencha a sinopse','#f0b429');
+      it.sinEl.value=it.sinopse;
+      montaNome(it);pintaCapa(it);
+      var extra=it.dl?'':' — diga se é dublado ou legendado';
+      if(it.sinopse&&m.descricao)marca(it,'✓ Pronto'+extra,'#3dd68c');
+      else marca(it,(it.sinopse?'✓ Pronto (sem descrição no link — conferir)':'Preencha a sinopse')+extra,'#f0b429');
       it.feito=true;
     },function(){
-      it.titulo=nomeDoLink(it.link);it.nomeEl.value=it.titulo;pintaCapa(it);marca(it,'Preencha a sinopse','#f0b429');it.feito=true;
+      it.base=nomeDoLink(it.link);montaNome(it);pintaCapa(it);marca(it,'Preencha a sinopse — e diga se é dublado ou legendado','#f0b429');it.feito=true;
     });
   }
   function pool(arr,n,fn){
@@ -9004,7 +9074,7 @@ function capaReelsSVG(titulo,generos){
     var nome=(A.nome&&A.nome())||'Anônimo',perfil={link:pf.link||'',tipo:pf.tipo||'',rotulo:pf.rotulo||''};
     var pedidos=itens.map(function(it,k){
       var capa=capaItem(it);
-      return {id:'r'+Date.now().toString(36)+k.toString(36)+Math.random().toString(36).slice(2,5),tipo:'novo',criador:nome,titulo:(it.titulo||'').slice(0,80),sinopse:it.sinopse.slice(0,600),capa:capa,
+      return {id:'r'+Date.now().toString(36)+k.toString(36)+Math.random().toString(36).slice(2,5),tipo:'novo',criador:nome,titulo:(it.titulo||'').slice(0,150),sinopse:it.sinopse,capa:capa,
         perfil:perfil,anuncio:anu,partes:[{parte:1,link:it.link,criador:nome,perfil:perfil,anuncio:anu}],
         generos:[],capaAuto:!capa,status:'pendente',criadoEm:Date.now()+k};
     });
@@ -9048,5 +9118,25 @@ function capaReelsSVG(titulo,generos){
 })();
 </script>
 
+<script>
+/* ===== REELS · ATUALIZAR: só se pode mudar o nome e aumentar episódios (o administrador aprova ou nega) ===== */
+(function(){
+  function el(i){return document.getElementById(i);}
+  var orig=null;
+  window.__reelsAlvoMudou=function(r){
+    var box=el('reels-edit');if(!box)return;
+    orig=r?{titulo:r.titulo||''}:null;
+    box.style.display=r?'block':'none';
+    el('reels-edit-titulo').value=r?orig.titulo:'';
+  };
+  // {campos:{titulo}} se o nome mudou | {} se nada mudou | {erro}
+  window.__reelsAlteracoes=function(){
+    if(!orig)return null;
+    var t=el('reels-edit-titulo').value.trim().replace(/[<>]/g,'');
+    if(!t&&orig.titulo){el('reels-edit-titulo').focus();return {erro:'O nome não pode ficar vazio.'};}
+    return t!==orig.titulo?{campos:{titulo:t}}:{};
+  };
+})();
+</script>
 </body>
 </html>
