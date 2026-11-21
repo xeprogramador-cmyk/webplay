@@ -9079,7 +9079,7 @@ function capaReelsSVG(titulo,generos){
       var capa=capaItem(it);
       return {id:'r'+Date.now().toString(36)+k.toString(36)+Math.random().toString(36).slice(2,5),tipo:'novo',criador:nome,titulo:(it.titulo||'').slice(0,150),sinopse:it.sinopse,capa:capa,
         perfil:perfil,anuncio:anu,partes:[{parte:1,link:it.link,criador:nome,perfil:perfil,anuncio:anu}],
-        generos:[],capaAuto:!capa,status:'pendente',criadoEm:Date.now()+k};
+        generos:['Drama Play','Real Play'],capaAuto:!capa,status:'pendente',criadoEm:Date.now()+k}; // Várias séries: sem gênero escolhido, entra sempre Drama Play + Real Play
     });
     btn.disabled=true;m.style.color='#f0b429';m.textContent='A enviar '+pedidos.length+(pedidos.length===1?' série…':' séries…');
     Promise.all(pedidos.map(function(p){return db.ref('reels_pedidos/'+p.id).set(p);})).then(function(){
