@@ -2009,7 +2009,7 @@ try{var _l=new URLSearchParams(location.search).get("l");if(_l&&/^(pt|en|es|fr)$
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
         <button type="button" id="reels-cap-analisar" onclick="reelsCapAnalisar()" style="display:none;padding:10px 16px;border-radius:10px;border:0;background:#f0b429;color:#1a1300;font-weight:800;font-size:14px;cursor:pointer;"></button>
         <button type="button" onclick="reelsCapColar()" style="padding:9px 14px;border-radius:10px;border:1px dashed var(--line,#252b38);background:none;color:inherit;font-weight:700;font-size:13px;cursor:pointer;">Colar o que copiei agora</button>
-        <button type="button" id="reels-cap-limpar" onclick="reelsCapLimpar()" style="display:none;padding:9px 14px;border-radius:10px;border:1px dashed var(--line,#252b38);background:none;color:inherit;font-weight:700;font-size:13px;cursor:pointer;">Limpar</button>
+        <button type="button" id="reels-cap-limpar" onclick="reelsCapLimpar()" style="padding:9px 14px;border-radius:10px;border:1px dashed var(--line,#252b38);background:none;color:inherit;font-weight:700;font-size:13px;cursor:pointer;">Resetar análise</button>
       </div>
     </div>
     <label style="font-size:13px;font-weight:700;display:block;">Cole os links das séries / filmes <span style="font-weight:600;opacity:.7;">— sem limite; pode colar seguidos, ele separa sozinho</span></label>
@@ -8888,7 +8888,13 @@ function capaReelsSVG(titulo,generos){
 (function(){
   function el(i){return document.getElementById(i);}
   function aux(){return window.__reelsAux||{};}
-  var itens=[],ocupado=false,emLote=false;
+  var itens=[],ocupado=false,emLote=false,resumo='',tS=0;
+  var K_LOTE='reels_lote_itens';
+  // guarda a lista no aparelho: o que foi colado/analisado continua lá mesmo que se feche a app
+  function salva(){
+    clearTimeout(tS);
+    tS=setTimeout(function(){try{localStorage.setItem(K_LOTE,JSON.stringify(itens.map(function(x){return {link:x.link,base:x.base||'',dl:x.dl||'',extras:x.extras||[],sinopse:x.sinopse||'',capa:x.capa||'',titulo:x.titulo||'',feito:!!x.feito};})));}catch(e){}},250);
+  }
   var GENERICO=/^(google drive|google drive:.*|youtube|facebook|instagram|tiktok|vimeo|log ?in.*|sign ?in.*|entrar.*|just a moment.*|access denied|attention required.*|403.*|404.*)$/i;
   function bom(t){t=(t||'').trim();return !!t&&!GENERICO.test(t);}
   var RE_TAG=/#[\p{L}\p{N}_]+/gu;
@@ -8926,7 +8932,7 @@ function capaReelsSVG(titulo,generos){
     var p=[];if(it.dl)p.push(it.dl);(it.extras||[]).forEach(function(x){if(p.indexOf(x)<0)p.push(x);});
     it.titulo=((it.base||'').trim()+(p.length?' / '+p.join(' / '):'')).slice(0,150);
     if(it.nomeEl)it.nomeEl.value=it.titulo;
-    pintaChips(it);
+    pintaChips(it);salva();
     if(it.img&&!it.capa&&!(aux().capaLink&&aux().capaLink(it.link)))pintaCapa(it);
   }
   function nomeDoLink(l){
@@ -9019,16 +9025,17 @@ function capaReelsSVG(titulo,generos){
     ['Dublado','Legendado'].forEach(function(n){var b=document.createElement('button');b.type='button';b.textContent=n;b.onclick=function(){it.dl=(it.dl===n)?'':n;montaNome(it);};linha.appendChild(b);it.chips[n]=b;});
     col.appendChild(topo);col.appendChild(nome);col.appendChild(sin);col.appendChild(linha);col.appendChild(lk);
     c.appendChild(img);c.appendChild(col);
-    nome.addEventListener('input',function(){it.titulo=nome.value.trim().replace(/[<>]/g,'');it.base=it.titulo.replace(SUF,'').trim();if(!it.capa&&!(aux().capaLink&&aux().capaLink(it.link)))pintaCapa(it);});
-    sin.addEventListener('input',function(){it.sinopse=sin.value.trim();sin.style.borderColor='';});
+    nome.addEventListener('input',function(){salva();it.titulo=nome.value.trim().replace(/[<>]/g,'');it.base=it.titulo.replace(SUF,'').trim();if(!it.capa&&!(aux().capaLink&&aux().capaLink(it.link)))pintaCapa(it);});
+    sin.addEventListener('input',function(){it.sinopse=sin.value.trim();sin.style.borderColor='';salva();});
     rm.onclick=function(){itens=itens.filter(function(x){return x!==it;});c.remove();contador();};
     it.card=c;it.img=img;it.st=st;it.nomeEl=nome;it.sinEl=sin;it.dl='';it.extras=[];pintaChips(it);
     return c;
   }
   function marca(it,txt,cor){it.st.textContent=txt;it.st.style.color=cor||'';}
   function contador(){
+    salva();
     var n=itens.length,s=el('reels-lote-estado'),b=el('reels-lote-envio');
-    if(s&&!ocupado)s.textContent=n?(n+(n===1?' série pronta':' séries prontas')+' — confira e envie.'):'';
+    if(s&&!ocupado)s.textContent=n?(n+(n===1?' série pronta':' séries prontas')+' — confira e envie.'+(resumo?' ('+resumo+')':'')):(resumo||'');
     if(b)b.style.display=(emLote&&n)?'block':'none';
   }
   function analisarItem(it){
@@ -9061,6 +9068,8 @@ function capaReelsSVG(titulo,generos){
     var vals=(t.value.match(/https?:\/\/.+?(?=https?:\/\/|[\s,;"'<>]|$)/gi)||[]);
     var ja={};itens.forEach(function(x){ja[x.link]=1;});
     var novos=[];vals.forEach(function(v){if(!ja[v]){ja[v]=1;novos.push(v);}});
+    var rep=vals.length-novos.length;
+    resumo=vals.length+(vals.length===1?' link lido':' links lidos')+(rep?' · '+rep+(rep===1?' repetido ignorado':' repetidos ignorados'):'');
     if(!vals.length){m.style.color='#ff9c94';m.textContent='Cole pelo menos um link (https://…), um por linha.';t.focus();return;}
     m.textContent='';
     if(!novos.length){m.style.color='#f0b429';m.textContent='Esses links já estão na lista.';t.value='';return;}
@@ -9103,6 +9112,32 @@ function capaReelsSVG(titulo,generos){
       btn.disabled=false;contador();
     }).catch(function(){btn.disabled=false;erro('Não foi possível enviar. Tente novamente.');if(window.avisoEnvio)window.avisoEnvio('❌ Não foi possível enviar',false);});
   };
+  // Resetar a análise: apaga a lista, o texto colado e o resumo, para recomeçar do zero
+  window.reelsLoteResetar=function(){
+    itens=[];ocupado=false;resumo='';
+    var l=el('reels-lote-lista');if(l)l.innerHTML='';
+    var t=el('reels-lote-texto');if(t)t.value='';
+    var m=el('reels-lote-msg');if(m)m.textContent='';
+    var e=el('reels-lote-estado');if(e)e.textContent='';
+    contador();
+  };
+  function restaura(){
+    var v;try{v=JSON.parse(localStorage.getItem(K_LOTE)||'[]');}catch(e){v=[];}
+    var lista=el('reels-lote-lista');
+    if(!Array.isArray(v)||!v.length||!lista)return;
+    var pend=[];
+    v.forEach(function(d){
+      if(!d||!/^https?:\/\//i.test(d.link))return;
+      var it={link:d.link,titulo:d.titulo||'',sinopse:d.sinopse||'',capa:d.capa||'',base:d.base||'',feito:!!d.feito};
+      itens.push(it);lista.appendChild(criaCard(it));
+      it.dl=d.dl||'';it.extras=Array.isArray(d.extras)?d.extras:[];
+      it.sinEl.value=it.sinopse;it.nomeEl.value=it.titulo;pintaChips(it);pintaCapa(it);
+      if(it.feito)marca(it,'✓ Guardado','#3dd68c');else pend.push(it);
+    });
+    if(pend.length){ocupado=true;pool(pend,3,analisarItem).then(function(){ocupado=false;contador();});}
+    contador();
+  }
+  restaura();
   // modo "Várias séries": acrescenta-se ao seletor sem alterar Novo / Atualizar
   var orig=window.reelsModo;
   function pilula(b,on){if(!b)return;b.style.cssText='flex:1;padding:10px 12px;border-radius:999px;font-weight:700;font-size:13px;cursor:pointer;border:1px solid '+(on?'#f0b429':'var(--line,#252b38)')+';background:'+(on?'#f0b429':'none')+';color:'+(on?'#1a1300':'inherit')+';';}
@@ -9180,7 +9215,7 @@ function capaReelsSVG(titulo,generos){
     sw.style.border='1px solid '+(on?'#f0b429':'var(--line,#252b38)');sw.style.background=on?'#f0b429':'none';sw.style.color=on?'#1a1300':'inherit';
     var n=fila.length,b=el('reels-cap-analisar'),lp=el('reels-cap-limpar'),st=el('reels-cap-estado');
     b.style.display=n?'inline-block':'none';b.textContent='Analisar '+n+(n===1?' link':' links');
-    lp.style.display=n?'inline-block':'none';
+    lp.style.display='inline-block';
     var t=n?(n+(n===1?' link guardado':' links guardados')+' desde que ligou.'):(on?'Ligado — copie os links e volte aqui.':'');
     st.style.color='';st.textContent=aviso||t;
   }
@@ -9210,7 +9245,9 @@ function capaReelsSVG(titulo,generos){
     if(on)ler(true).then(function(){if(!fila.length){aviso='';pinta();}}); // o clique pede a permissão de leitura
   };
   window.reelsCapColar=function(){ler(true);};
-  window.reelsCapLimpar=function(){fila=[];aviso='';guarda();pinta();};
+  // a parte nativa da APK chama isto sempre que apanha um link: webView.evaluateJavascript("reelsCapReceber('…')",null)
+  window.reelsCapReceber=function(texto){var n=add(soLinks(texto));aviso='';pinta();return n;};
+  window.reelsCapLimpar=function(){fila=[];ultimo='';aviso='';guarda();if(window.reelsLoteResetar)window.reelsLoteResetar();pinta();}; // apaga tudo o que foi copiado/analisado; pode copiar de novo
   window.reelsCapAnalisar=function(){
     var t=el('reels-lote-texto');if(!t||!fila.length)return;
     t.value=(t.value?t.value.replace(/\s*$/,'')+'\n':'')+fila.join('\n');
