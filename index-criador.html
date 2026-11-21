@@ -1997,6 +1997,21 @@ try{var _l=new URLSearchParams(location.search).get("l");if(_l&&/^(pt|en|es|fr)$
     </div>
   </div>
   <div id="reels-bloco-lote" style="display:none;margin-bottom:14px;">
+    <div id="reels-cap" style="padding:12px;border:1px solid #f0b429;border-radius:12px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:800;font-size:14px;">Quero publicar</div>
+          <div style="font-size:12px;opacity:.8;">Ligue e vá copiando links (em qualquer lugar). Ao voltar aqui, os que guardámos entram sozinhos — sem limite.</div>
+        </div>
+        <button type="button" id="reels-cap-sw" onclick="reelsCapAlternar()" role="switch" aria-checked="false" style="flex:0 0 auto;padding:8px 16px;border-radius:999px;font-weight:800;font-size:13px;cursor:pointer;"></button>
+      </div>
+      <div id="reels-cap-estado" style="font-size:12.5px;margin:10px 0 0;min-height:16px;"></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
+        <button type="button" id="reels-cap-analisar" onclick="reelsCapAnalisar()" style="display:none;padding:10px 16px;border-radius:10px;border:0;background:#f0b429;color:#1a1300;font-weight:800;font-size:14px;cursor:pointer;"></button>
+        <button type="button" onclick="reelsCapColar()" style="padding:9px 14px;border-radius:10px;border:1px dashed var(--line,#252b38);background:none;color:inherit;font-weight:700;font-size:13px;cursor:pointer;">Colar o que copiei agora</button>
+        <button type="button" id="reels-cap-limpar" onclick="reelsCapLimpar()" style="display:none;padding:9px 14px;border-radius:10px;border:1px dashed var(--line,#252b38);background:none;color:inherit;font-weight:700;font-size:13px;cursor:pointer;">Limpar</button>
+      </div>
+    </div>
     <label style="font-size:13px;font-weight:700;display:block;">Cole os links das séries / filmes <span style="font-weight:600;opacity:.7;">— sem limite; pode colar seguidos, ele separa sozinho</span></label>
     <textarea id="reels-lote-texto" rows="6" placeholder="https://…&#10;https://…&#10;https://…" style="width:100%;margin:6px 0 8px;padding:10px;border-radius:10px;border:1px solid var(--line,#252b38);background:var(--panel2,#1a1f2a);color:inherit;font:inherit;resize:vertical;"></textarea>
     <button type="button" onclick="reelsLoteAnalisar()" style="width:100%;padding:11px;border-radius:12px;border:0;background:#f0b429;color:#1a1300;font-weight:800;font-size:14px;cursor:pointer;">Analisar links</button>
@@ -9136,6 +9151,77 @@ function capaReelsSVG(titulo,generos){
     if(!t&&orig.titulo){el('reels-edit-titulo').focus();return {erro:'O nome não pode ficar vazio.'};}
     return t!==orig.titulo?{campos:{titulo:t}}:{};
   };
+})();
+</script>
+<script>
+/* ===== REELS · "QUERO PUBLICAR": guarda os links que o usuário vai copiando e entrega-os todos de uma vez =====
+   Limite da web: uma página não consegue vigiar a área de transferência em segundo plano. Por isso lê o que está copiado
+   sempre que o usuário volta à página (e a cada 2 s enquanto ela está aberta). Se a app Android tiver a ponte nativa
+   window.AndroidClip.pegarLinks() (texto com os links guardados pelo lado nativo), usa-a também. */
+(function(){
+  function el(i){return document.getElementById(i);}
+  var K_FILA='reels_cap_fila',K_ON='reels_cap_on',RE=/https?:\/\/.+?(?=https?:\/\/|[\s,;"'<>]|$)/gi;
+  var fila=[],on=false,ultimo='',acesso=true,poll=null,aviso='';
+  try{fila=JSON.parse(localStorage.getItem(K_FILA)||'[]')||[];on=localStorage.getItem(K_ON)==='1';}catch(e){fila=[];}
+  if(!Array.isArray(fila))fila=[];
+  function guarda(){try{localStorage.setItem(K_FILA,JSON.stringify(fila));localStorage.setItem(K_ON,on?'1':'0');}catch(e){}}
+  function extrai(t){return String(t||'').match(RE)||[];}
+  // só aceita o que foi copiado se for APENAS link(s): qualquer texto que não seja link é ignorado
+  function soLinks(t){
+    var tk=String(t||'').trim().split(/[\s,;]+/).filter(Boolean);
+    if(!tk.length)return [];
+    for(var i=0;i<tk.length;i++){if(!/^https?:\/\/\S+$/i.test(tk[i]))return [];}
+    return extrai(t);
+  }
+  function add(links){var n=0;links.forEach(function(l){if(fila.indexOf(l)<0){fila.push(l);n++;}});if(n)guarda();return n;}
+  function pinta(){
+    var sw=el('reels-cap-sw');if(!sw)return;
+    sw.textContent=on?'Ligado':'Desligado';sw.setAttribute('aria-checked',on?'true':'false');
+    sw.style.border='1px solid '+(on?'#f0b429':'var(--line,#252b38)');sw.style.background=on?'#f0b429':'none';sw.style.color=on?'#1a1300':'inherit';
+    var n=fila.length,b=el('reels-cap-analisar'),lp=el('reels-cap-limpar'),st=el('reels-cap-estado');
+    b.style.display=n?'inline-block':'none';b.textContent='Analisar '+n+(n===1?' link':' links');
+    lp.style.display=n?'inline-block':'none';
+    var t=n?(n+(n===1?' link guardado':' links guardados')+' desde que ligou.'):(on?'Ligado — copie os links e volte aqui.':'');
+    st.style.color='';st.textContent=aviso||t;
+  }
+  function ler(manual){
+    if(window.AndroidClip&&typeof window.AndroidClip.pegarLinks==='function'){
+      try{add(soLinks(window.AndroidClip.pegarLinks()));}catch(e){}
+    }
+    if(!navigator.clipboard||!navigator.clipboard.readText){
+      acesso=false;aviso=manual?'Este navegador não deixa ler o que você copiou — cole os links no campo abaixo.':'';pinta();return Promise.resolve(0);
+    }
+    return navigator.clipboard.readText().then(function(t){
+      acesso=true;aviso='';
+      var novo=(t!==ultimo)||manual,l=soLinks(t),n=novo?add(l):0;ultimo=t;
+      if(manual&&!n)aviso=l.length?'Esses links já estão guardados.':'O que você copiou não é só link — ignorado.';
+      pinta();return n;
+    },function(){
+      acesso=false;aviso=manual?'Não deu para ler o que você copiou. Permita o acesso à área de transferência e tente de novo.':'';pinta();return 0;
+    });
+  }
+  function arranca(){
+    if(poll)clearInterval(poll);poll=null;
+    if(!on)return;
+    poll=setInterval(function(){if(!document.hidden&&document.hasFocus()&&acesso)ler(false);},2000);
+  }
+  window.reelsCapAlternar=function(){
+    on=!on;guarda();aviso='';pinta();arranca();
+    if(on)ler(true).then(function(){if(!fila.length){aviso='';pinta();}}); // o clique pede a permissão de leitura
+  };
+  window.reelsCapColar=function(){ler(true);};
+  window.reelsCapLimpar=function(){fila=[];aviso='';guarda();pinta();};
+  window.reelsCapAnalisar=function(){
+    var t=el('reels-lote-texto');if(!t||!fila.length)return;
+    t.value=(t.value?t.value.replace(/\s*$/,'')+'\n':'')+fila.join('\n');
+    fila=[];aviso='';guarda();pinta();
+    if(window.reelsLoteAnalisar)window.reelsLoteAnalisar();
+  };
+  function voltou(){if(on)ler(false);}
+  window.addEventListener('focus',voltou);
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)voltou();});
+  document.addEventListener('DOMContentLoaded',function(){pinta();arranca();voltou();});
+  if(document.readyState!=='loading'){pinta();arranca();}
 })();
 </script>
 </body>
