@@ -259,6 +259,37 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .dpub .av{flex:0 0 40px;height:40px;border-radius:50%;background:var(--accent);color:var(--bg);display:grid;place-items:center;font-weight:800}
 .dpub .tx{flex:1;min-width:0;display:flex;flex-direction:column}.dpub small{font-size:10.5px;color:var(--muted)}.dpub b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dseg{flex:0 0 auto;padding:8px 14px;border-radius:999px;background:var(--accent);color:var(--bg);font-weight:800;font-size:12.5px}.dseg.on{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+
+/* ===== v4: cards sempre grandes (2 por linha), em todas as secções ===== */
+.fila .cp{flex:0 0 46%}
+.fila .cp .c,.g3 .cp .c,.mas.pag .cp .c{aspect-ratio:2/3!important;border-radius:10px;border:0}
+.fila .cp .n,.g3 .cp .n{font-size:13px;margin-top:7px}
+.fila .cp .g,.g3 .cp .g{display:inline-block;max-width:100%;padding:3px 9px;border-radius:6px;background:color-mix(in srgb,var(--ink) 10%,transparent);margin-top:5px}
+.g3{grid-template-columns:repeat(2,1fr)}
+@media(min-width:640px){.g3{grid-template-columns:repeat(3,1fr)}.fila .cp{flex:0 0 30%}}
+
+/* ===== v5: início como na referência: banner grande por baixo da pesquisa/abas, depois fila de 3 ===== */
+#inicio.home .topo{background:linear-gradient(#000c,transparent);padding-bottom:6px}
+#inicio.home .tabs{position:relative;z-index:4;text-shadow:0 1px 4px #000}
+#inicio.home .tabs button{color:#ffffffb0}#inicio.home .tabs button.on{color:#fff}
+#inicio.home #blocoBan{margin-top:-104px}
+#inicio.home #blocoBan .sec{display:none}
+#inicio.home .ban{padding:0;gap:0}
+#inicio.home .hero{border-radius:0;border:0;flex:0 0 100%}
+#inicio.home .hero,#inicio.home .hero .t{min-height:540px}
+#inicio.home .hero:before{background:linear-gradient(#0008,transparent 30%,transparent 55%,var(--bg) 98%)}
+.fila .cp{flex:0 0 31%}
+@media(min-width:640px){.fila .cp{flex:0 0 22%}}
+
+/* ===== v6: botões laterais mais acima + ecrã completo ===== */
+.lado{bottom:calc(env(safe-area-inset-bottom,0px) + 270px)}
+#leitor.serie .lado{bottom:calc(env(safe-area-inset-bottom,0px) + 165px)}
+.full .co{display:none}
+body.imersivo .full .ex{display:none}body.imersivo .full .co{display:block}
+body.imersivo #nav,body.imersivo .barra .dir,body.imersivo #abaInicio,body.imersivo #aviso,body.imersivo #leitor .info,body.imersivo #leitor .prog,body.imersivo #leitor .escudo span,body.imersivo #leitor .lado button:not(.full){display:none!important}
+body.imersivo #leitor .lado,body.imersivo #leitor.serie .lado{bottom:calc(env(safe-area-inset-bottom,0px) + 28px)}
+body.imersivo .lado .full{opacity:.28;transition:opacity .2s}
+body.imersivo .lado.mostra .full,body.imersivo .lado .full:active{opacity:1}
 </style>
 </head>
 <body>
@@ -269,8 +300,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
     <button class="casa" id="casa" aria-label="Descer para o início do site"><svg class="i" viewBox="0 0 24 24"><path d="M8 18V6h5a3.5 3.5 0 010 7H8m5 0l4 5"/></svg></button></div>
   <div class="hs tabs" id="tabs"><button data-a="pop" class="on">Popular</button><button data-a="novos">Novo</button><button data-a="class">Classificação</button><button data-a="cat">Categorias</button></div>
   <div class="hs abas" id="abas" style="display:none"><button data-a="hist" class="on">Histórico</button><button data-a="fav">Favoritos</button><button data-a="cont">A continuar</button></div>
-  <div id="blocoHist"><div class="sec">Em alta · recém-lançados</div><div class="hs fila" id="hist"></div></div>
   <div id="blocoBan"><div class="sec">Os mais assistidos</div><div class="hs ban" id="ban"></div><div class="pts" id="pts"></div></div>
+  <div id="blocoHist"><div class="sec">Em alta · recém-lançados</div><div class="hs fila" id="hist"></div></div>
   <div class="hs chips" id="chips"></div>
   <div class="mas" id="grade"></div>
 </div>
@@ -439,7 +470,7 @@ function desenharInicio(){
     :aba==="class"?[...reels].sort((a,b)=>media(b.id)-media(a.id)||pop(b.id)-pop(a.id)):reels;
   base=base.filter(ok);lista=base;
   desenharStories();desenharBanner();desenharGeneros();
-  const home=aba==="pop"&&!q,mas=(!!q||L||aba==="pop")&&aba!=="hist";
+  const home=aba==="pop"&&!q,mas=(!!q||L||aba==="pop")&&aba!=="hist";$("inicio").classList.toggle("home",home);
   if(!home)$("blocoHist").style.display=$("blocoBan").style.display="none";
   if(aba!=="cat"||q)$("chips").style.display="none";
   const rt=retoma(),cur=curtidos(),ag=Date.now(),D=864e5;let out="";
@@ -595,14 +626,15 @@ function secHtml(r,k,cur,votos){
       <button class="cur ${cur.includes(r.id)?"on":""}" aria-label="Favorito"><i>${IC_CUR}</i></button>
       <button class="est ${votos[r.id]?"on":""}" aria-label="Estrelas"><i>${IC_EST}</i><span class="vm">${m?m.toFixed(1):"—"}</span></button>
       <button class="com" aria-label="Comentários"><i>${IC_COM}</i><span class="vc">${fmt(+st(r.id).c||0)}</span></button>
+      <button class="full" aria-label="Ecrã completo"><i><svg class="i ex" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><svg class="i co" viewBox="0 0 24 24"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg></i></button>
     </div>
     <div class="info"><button class="ser chipserie" aria-label="Ver a série"><i class="mini" style="${r.capa?`background-image:url('${esc(r.capa)}')`:""}"></i><span class="tx"><small>SÉRIE</small><b>${esc(tituloDe(r))}</b><em>EP ${esc(p.parte)} de ${r.partes.length} · ver capa e comentários ›</em></span></button>${r.criador?`<div class="criador">@${esc(r.criador)}</div>`:""}${r.generos.length?`<div class="gen">${r.generos.map(g=>`<span>${esc(g)}</span>`).join("")}</div>`:""}<div class="sin">${esc(r.sinopse)}</div>
       <div class="nparts">Parte ${esc(p.parte)} de ${r.partes.length}</div><div class="partes${r.partes.length>8?" muitas":""}"></div></div>
   </section>`;}
-function juntar(r){
-  const cur=curtidos(),votos=lerLS(K_VOTOS,{}),ini=fila.length;
-  r.partes.forEach((p,k)=>fila.push({r,k}));
-  const f=$("feed");f.insertAdjacentHTML("beforeend",r.partes.map((p,k)=>secHtml(r,k,cur,votos)).join(""));
+function juntar(r,todas){   // todas=true: todos os episódios em sequência (só ao abrir uma série); senão UMA parte aleatória (Para si)
+  const cur=curtidos(),votos=lerLS(K_VOTOS,{}),ini=fila.length,ks=todas?r.partes.map((p,k)=>k):[Math.floor(Math.random()*r.partes.length)];
+  ks.forEach(k=>fila.push({r,k}));
+  const f=$("feed");f.insertAdjacentHTML("beforeend",ks.map(k=>secHtml(r,k,cur,votos)).join(""));
   for(let i=ini;i<f.children.length;i++)if(obs)obs.observe(f.children[i]);
 }
 function maisFila(){if(modo==="serie")return;
@@ -629,18 +661,18 @@ function aoAcabar(card){
   if(!cfg.auto)return;const i=[...$("feed").children].indexOf(sec);if(i>=0)irPara(i+1,true);
 }
 let modo="para",serieAtual=null;
-function iniciarFila(r0,k0,seguintes){modo="para";serieAtual=null;$("leitor").classList.remove("serie");
+function iniciarFila(r0,k0,seguintes,todas){document.body.classList.remove("imersivo");modo="para";serieAtual=null;$("leitor").classList.remove("serie");
   if(obs)obs.disconnect();fila=[];proxRs=seguintes.slice();atual=null;
   $("feed").innerHTML="";aplicarDirecao();
   obs=new IntersectionObserver(es=>es.forEach(en=>{if(en.intersectionRatio>=.55)ativar(en.target);else limpar(en.target);}),{root:$("feed"),threshold:[0,.55]});
-  juntar(r0);for(let n=0;n<2&&proxRs.length;n++)juntar(proxRs.shift());
+  juntar(r0,todas);for(let n=0;n<2&&proxRs.length;n++)juntar(proxRs.shift());
   $("leitor").classList.add("on");noLeitor=true;navAtivo("para");$("leitor").classList.remove("limpo");
   irPara(Math.max(0,fila.findIndex(x=>x.r===r0&&x.k===k0)));
   try{history.pushState({wprLeitor:1},"");}catch(e){}
 }
 function abrirLeitor(id){const r0=reels.find(r=>r.id===id)||reels[0];if(!r0)return;const rt=retoma()[id];let k0=rt?rt.k:0;if(k0>=r0.partes.length)k0=0;iniciarSerie(r0,k0);}
 function iniciarSerie(r,k0){
-  iniciarFila(r,k0,[]);modo="serie";serieAtual=r;$("leitor").classList.add("serie");navAtivo("inicio");
+  iniciarFila(r,k0,[],true);modo="serie";serieAtual=r;$("leitor").classList.add("serie");navAtivo("inicio");
   const f=$("feed");f.insertAdjacentHTML("beforeend",`<section class="reel fimc"><div class="fimbox"><b>${r.fim?"Fim":"O episódio terminou por aqui"}</b><p>${r.fim?"Fim do lançamento.":"Espere por mais lançamentos."}</p><button class="p" data-acao="det">Ver detalhes e comentários</button><button data-acao="ini">Voltar ao início</button></div></section>`);
   if(obs)obs.observe(f.lastElementChild);
 }
@@ -688,12 +720,13 @@ function iniciarSugerido(){
   if(cfg.aviso){$("aviso").classList.add("on");clearTimeout(iniciarSugerido.t);iniciarSugerido.t=setTimeout(()=>$("aviso").classList.remove("on"),8000);}
 }
 function fecharLeitor(deHistorico,semDetalhe){
+  document.body.classList.remove("imersivo");
   if(!noLeitor)return;const rs=modo==="serie"?serieAtual:null;modo="para";serieAtual=null;$("leitor").classList.remove("serie");noLeitor=false;atual=null;clearTimeout(tAuto);if(obs)obs.disconnect();
   fecharFolha();$("aviso").classList.remove("on");$("leitor").classList.remove("on");$("feed").innerHTML="";fila=[];$("leitor").classList.remove("limpo");navAtivo(aba==="fav"||aba==="cont"?"lista":"inicio");desenharInicio();
   if(!deHistorico){try{if(history.state&&history.state.wprLeitor)history.back();}catch(e){}}
   if(rs&&!semDetalhe)abrirDetalhe(rs);
 }
-addEventListener("popstate",()=>{if(noLeitor)fecharLeitor(true);});
+addEventListener("popstate",()=>{if(emImersivo()){imersivo(false);try{history.pushState({wprLeitor:1},"");}catch(e){}return;}if(noLeitor)fecharLeitor(true);});
 
 $("abaInicio").onclick=()=>fecharLeitor(false,true);
 
@@ -717,7 +750,21 @@ $("folhaConteudo").addEventListener("click",e=>{
 $("defs").onclick=abrirDefs;$("defs0").onclick=abrirDefs;
 $("avDef").onclick=()=>{$("aviso").classList.remove("on");abrirDefs();};
 $("avNao").onclick=()=>{cfg.aviso=false;gravarLS(K_CFG,cfg);$("aviso").classList.remove("on");};
-$("voltar").onclick=()=>fecharLeitor();
+$("voltar").onclick=()=>{if(emImersivo()){imersivo(false);return;}fecharLeitor();};
+/* ===== ecrã completo: só o botão de voltar (e o ícone para sair) ===== */
+const emImersivo=()=>document.body.classList.contains("imersivo");
+function imersivo(on){document.body.classList.toggle("imersivo",on);}
+function alternarImersivo(){
+  if(emImersivo()){imersivo(false);return;}
+  if(cfg.autoPerg){imersivo(true);return;}
+  $("folhaConteudo").innerHTML=`<h4>Rolar automaticamente?<button data-fechar aria-label="Fechar"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></h4>
+   <div class="def"><small style="margin:0 0 10px">Ao acabar um vídeo, passa sozinho para o próximo (Automático) ou ficas tu a deslizar (Manual). Podes mudar isto nas definições.</small><div class="seg" data-k="auto"><button data-v="true" class="${cfg.auto?"on":""}">Automático</button><button data-v="false" class="${cfg.auto?"":"on"}">Manual</button></div></div>
+   <button class="dplay" data-imers>Ativar ecrã completo</button>`;
+  $("folha").classList.remove("det");$("folha").classList.add("on");
+}
+$("folhaConteudo").addEventListener("click",e=>{if(!e.target.closest("[data-imers]"))return;cfg.autoPerg=true;gravarLS(K_CFG,cfg);fecharFolha();imersivo(true);});
+$("feed").addEventListener("click",e=>{if(emImersivo()&&e.target.closest("video")){const l=e.target.closest(".reel").querySelector(".lado");l.classList.add("mostra");setTimeout(()=>l.classList.remove("mostra"),3000);}});
+
 
 
 /* ===== ver a série: capa, episódio em que estás, lista de episódios ===== */
@@ -802,7 +849,8 @@ $("feed").addEventListener("click",e=>{
   const c=e.target.closest(".cur");if(c){const on=alternarCurtir(r.id);document.querySelectorAll('.reel[data-id="'+CSS.escape(r.id)+'"] .cur').forEach(x=>x.classList.toggle("on",on));return;}
   if(e.target.closest(".est")){abrirEstrelas(reel,r);return;}
   if(e.target.closest(".com")){abrirComentarios(reel,r);return;}
-  if(e.target.closest(".ser")){abrirSerie(reel,r);return;}
+  if(e.target.closest(".full")){alternarImersivo();return;}
+  if(e.target.closest(".ser")){fecharLeitor(false,true);navAtivo("inicio");abrirDetalhe(r);return;}
   const s=e.target.closest(".sin");if(s)s.classList.toggle("aberta");
 });
 
