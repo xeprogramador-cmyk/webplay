@@ -306,6 +306,32 @@ body.imersivo .lado.mostra .full,body.imersivo .lado .full:active{opacity:1}
 .cp .n{font-size:12.5px;line-height:1.25;margin-top:6px}
 .cp .g{display:block;padding:0;background:none;border-radius:0;font-size:10.5px;color:var(--muted);margin-top:2px}
 @media(min-width:640px){.fila .cp{flex:0 0 18%}.g3{grid-template-columns:repeat(5,1fr)}}
+
+/* ===== v9: igual à referência — hero com pesquisa transparente; Popular em 2 colunas (cards 3:4) com o cartão "Popular" na coluna da direita ===== */
+#inicio.home .topo{background:linear-gradient(#000a,transparent);gap:8px}
+#inicio.home .busca{background:rgba(20,20,26,.38);border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);height:44px;border-radius:12px;color:#ffffffc0}
+#inicio.home .busca input{color:#fff}#inicio.home .busca input::placeholder{color:#ffffffb8}
+.tabs button{text-transform:uppercase;letter-spacing:.3px;font-size:15px}
+.tabs button.on{border-color:transparent}
+#inicio.home .hero,#inicio.home .hero .t{min-height:clamp(430px,112vw,640px)}
+#inicio.home .hero .t{padding-bottom:34px;gap:10px}
+#inicio.home .hero .t small,#inicio.home .hero .meta{display:none}
+#inicio.home .hero .gen span{background:rgba(255,255,255,.18);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);color:#fff;font-weight:600;font-size:12px;padding:5px 11px;border-radius:6px}
+#inicio.home .hero .btn-ver{width:44%;min-width:170px;border-radius:6px;padding:13px 10px;text-transform:uppercase;font-weight:800;font-size:14.5px;background:#fff;color:#111}
+.pts i{width:14px;height:3px;border-radius:2px;background:#ffffff55}.pts i.on{width:20px;background:#fff;border-radius:2px}
+#inicio.home .pts{margin-top:-26px;position:relative;z-index:3;gap:6px;padding-bottom:16px}
+.cp .c em{top:6px;bottom:auto;left:6px;background:var(--accent);color:var(--bg);opacity:1;border-radius:5px;font-size:11px;font-weight:800;padding:2px 7px}
+.cp .c .co{top:auto;bottom:26px}
+.mc,.mas.pag>.mc{display:flex;flex-direction:row;flex:none;gap:10px;align-items:flex-start;padding:0}
+.mc>.col{flex:1;min-width:0;display:flex;flex-direction:column;gap:14px}
+.mc .cp{display:block;width:100%}
+.mc .cp .n{font-size:13.5px;font-weight:600;margin-top:7px}
+.mc .cp .g{display:inline-block;max-width:100%;padding:3px 9px;border-radius:6px;background:color-mix(in srgb,var(--ink) 10%,transparent);margin-top:6px;font-size:11px}
+.mc .rank{border:0;border-radius:10px;padding:12px 10px;background:linear-gradient(color-mix(in srgb,var(--accent) 14%,var(--panel)),var(--panel))}
+.mc .rank h4{font-size:17px;margin-bottom:10px}
+.mc .rk{margin-bottom:10px}.mc .rk i{flex:0 0 42px;height:56px}.mc .rk em{color:var(--accent);font-weight:700}
+.g3{grid-template-columns:repeat(2,1fr);gap:14px 10px;padding:0}
+@media(min-width:640px){.mc{max-width:640px;margin:0 auto}.g3{grid-template-columns:repeat(3,1fr)}}
 </style>
 </head>
 <body>
@@ -477,7 +503,13 @@ document.addEventListener("click",e=>{
 });
 function cartao(r,cur,rt){const prog=aba==="cont"&&rt[r.id]?Math.round(((rt[r.id].k+1)/r.partes.length)*100):0,m=media(r.id);
   return `<button class="cp" data-abrir="${esc(r.id)}"><div class="c" style="${r.capa?`background-image:url('${esc(r.capa)}')`:""}">${cur.includes(r.id)?IC_CORACAO:""}<em>${r.partes.length} ${r.partes.length>1?"partes":"parte"}</em><b>${IC_PLAY}${fmt(views(r.id))}</b></div><div class="n">${esc(tituloDe(r))}</div>${r.generos.length?`<div class="g">${esc(r.generos.join(" · "))}</div>`:""}${prog?`<div class="p"><i style="width:${prog}%"></i></div>`:""}</button>`;}
-function secao(t,its,cur,rt){return its.length?`<div class="sec" style="padding-left:0">${t}</div><div class="g3">${its.map(r=>cartao(r,cur,rt)).join("")}</div>`:"";}
+function secao(t,its,cur,rt){return its.length?`<div class="sec" style="padding-left:0">${t}</div>${masonry(its,cur,rt,false)}`:"";}
+function masonry(base,cur,rt,comRank){   // 2 colunas como na referência; o cartão "Popular" abre a coluna da direita
+  const A=[],B=[];let ha=0,hb=0;
+  if(comRank){const rk=rankHtml();if(rk){B.push(rk);hb=1.05;}}
+  base.forEach(r=>{if(ha<=hb){A.push(cartao(r,cur,rt));ha++;}else{B.push(cartao(r,cur,rt));hb++;}});
+  return `<div class="mc"><div class="col">${A.join("")}</div><div class="col">${B.join("")}</div></div>`;
+}
 function desenharInicio(){
   const L=aba==="fav"||aba==="cont"||aba==="hist",ok=r=>(!gen||r.generos.some(g=>g.toLowerCase()===gen.toLowerCase()))&&(!q||semAc(tituloDe(r)+" "+r.sinopse+" "+r.criador+" "+r.generos.join(" ")).includes(q));
   let base=aba==="fav"?curtidos().map(id=>reels.find(r=>r.id===id)).filter(Boolean)
@@ -491,11 +523,11 @@ function desenharInicio(){
   if(aba!=="cat"||q)$("chips").style.display="none";
   const rt=retoma(),cur=curtidos(),ag=Date.now(),D=864e5;let out="";
   if(aba==="hist")out=histHtml(base);
-  else if(mas){out=(home?`<div style="margin-bottom:14px">${rankHtml()}</div>`:"")+`<div class="g3">${base.map(r=>cartao(r,cur,rt)).join("")}</div>`;}
+  else if(mas){out=masonry(base,cur,rt,home);}
   else if(aba==="novos")out=secao("Hoje",base.filter(r=>ag-r.criadoEm<D),cur,rt)+secao("Esta semana",base.filter(r=>{const t=ag-r.criadoEm;return t>=D&&t<7*D;}),cur,rt)+secao("Mais antigos",base.filter(r=>ag-r.criadoEm>=7*D),cur,rt);
-  else if(aba==="class")out=`<div class="lr">${base.map((r,i)=>{const m=media(r.id);return `<button class="li" data-abrir="${esc(r.id)}"><span class="nr${i<3?" t":""}">${i+1}</span><i style="${r.capa?`background-image:url('${esc(r.capa)}')`:""}"></i><span class="tx"><b>${esc(tituloDe(r))}</b><em>${esc(r.generos.join(" · "))}</em><u>${m?"★ "+m.toFixed(1)+" · ":""}${fmt(views(r.id))} visualizações · ${r.partes.length} partes</u></span></button>`;}).join("")}</div>`;
+  else if(aba==="class")out=masonry(base,cur,rt,false);
   else if(aba==="cat"){if(gen)out=secao(esc(gen),base,cur,rt);else{const gs={};base.forEach(r=>r.generos.forEach(g=>{(gs[g]=gs[g]||[]).push(r);}));
-    out=Object.keys(gs).sort((a,b)=>gs[b].length-gs[a].length).map(g=>`<div class="sec" style="padding-left:0">${esc(g)} · ${gs[g].length}</div><div class="hs fila" style="margin:0 -16px 6px">${gs[g].slice(0,12).map(r=>cartao(r,cur,rt)).join("")}</div>`).join("");}}
+    out=Object.keys(gs).sort((a,b)=>gs[b].length-gs[a].length).map(g=>`<div class="sec" style="padding-left:0">${esc(g)} · ${gs[g].length}</div>${masonry(gs[g].slice(0,12),cur,rt,false)}`).join("");}}
   $("grade").className="mas pag";
   $("grade").innerHTML=base.length?out:`<div class="vazio">${aba==="fav"?"Toca no coração num Reels para ele aparecer aqui.":aba==="hist"?"Ainda não assististe nada. O que vires aparece aqui.":aba==="cont"?"Vê um Reels e ele aparece aqui para continuares depois.":q||gen?"Nada encontrado.":"Ainda não há Reels publicados."}</div>`;
 }
